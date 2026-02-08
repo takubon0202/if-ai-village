@@ -1,0 +1,52 @@
+{
+  "claude": {
+    "plan": "Max",
+    "price": "$200/月",
+    "model": "claude-opus-4-6"
+  },
+  "codex": {
+    "enabled": true,
+    "method": "codex-cli",
+    "command": "codex",
+    "model": "gpt-5.3-codex-high",
+    "subscription": "ChatGPT Plus ($20/月)",
+    "approvalPolicy": "never",
+    "autoInvoke": {
+      "onRepeatedError": 3,
+      "keywords": ["Codexで", "GPTで", "OpenAIで"]
+    }
+  },
+  "gemini": {
+    "enabled": true,
+    "method": "gemini-cli",
+    "command": "gemini",
+    "model": "gemini-3-pro-preview",
+    "subscription": "Gemini AI Pro ($19.99/月)",
+    "yolo": true,
+    "autoInvoke": {
+      "keywords": ["Geminiで", "Googleで"]
+    },
+    "models": {
+      "pro": "gemini-3-pro-preview",
+      "flash": "gemini-3-flash-preview"
+    },
+    "fallbackEnabled": false
+  },
+  "projectContext": {
+    "type": "minecraft-plugin",
+    "description": "Minecraft Java Edition プラグイン開発",
+    "language": "Java 21",
+    "buildTool": "Gradle 8.12 (Kotlin DSL)",
+    "api": "Paper API 1.21.11",
+    "contextFiles": ["CODEX.md", "GEMINI.md"]
+  },
+  "autoSwitch": {
+    "onError": "suggest-alternatives",
+    "alternatives": ["claude", "codex", "gemini"]
+  },
+  "usageLimits": {
+    "warnOnRateLimit": true,
+    "stopOnRateLimit": true,
+    "preventExtraCharges": true
+  }
+}

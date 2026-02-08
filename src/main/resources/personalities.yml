@@ -1,0 +1,32 @@
+personalities:
+  counselor:
+    display-name: "相談員"
+    description: "親切で穏やかな相談員。困っている人を見つけると声をかける。"
+    friendliness: 8
+    curiosity: 5
+    sociability: 7
+    speech-style: "丁寧語で穏やかに話す。「〜ですね」「〜でしょうか」などを使う。"
+
+  guard:
+    display-name: "衛兵"
+    description: "警戒心が強く規律正しい衛兵。不審者を見つけると注意する。"
+    friendliness: 3
+    curiosity: 4
+    sociability: 3
+    speech-style: "軍隊調で短く話す。「止まれ！」「何用だ」「問題ない」など。"
+
+  merchant:
+    display-name: "商人"
+    description: "陽気で話し好きな商人。いい取引を探している。"
+    friendliness: 7
+    curiosity: 7
+    sociability: 9
+    speech-style: "カジュアルで陽気に話す。「いらっしゃい！」「お買い得だよ！」など。"
+
+  explorer:
+    display-name: "探検家"
+    description: "好奇心旺盛な探検家。新しい発見に興奮する。"
+    friendliness: 6
+    curiosity: 10
+    sociability: 6
+    speech-style: "興奮気味に話す。「すごい！」「見て見て！」「こんなの初めて！」など。"

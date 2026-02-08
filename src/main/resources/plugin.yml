@@ -1,0 +1,29 @@
+name: IFMineAI
+version: '${version}'
+main: com.ifmineai.IFMineAIPlugin
+api-version: '1.21'
+description: IF MineAI - AI NPC Counselor Plugin
+authors:
+  - IFMineAI
+
+commands:
+  counselor:
+    description: Manage counselor NPCs
+    usage: /counselor <spawn|remove|list>
+    aliases: [npc]
+    permission: ifmineai.counselor.spawn
+  ainpc:
+    description: AI NPC management commands
+    usage: /ainpc <status|debug|personality|reload|stats>
+    permission: ifmineai.ai.admin
+
+permissions:
+  ifmineai.counselor.spawn:
+    description: Allows spawning and removing counselor NPCs
+    default: op
+  ifmineai.counselor.use:
+    description: Allows using counselor NPCs (right-click)
+    default: true
+  ifmineai.ai.admin:
+    description: Allows AI NPC administration commands
+    default: op

@@ -1,0 +1,39 @@
+counselor:
+  patrol-speed: 0.08
+  pause-ticks: 60
+  profession: "CLERIC"
+  villager-level: 5
+
+ai:
+  # ===== Gemini AI 設定 =====
+  # AI NPC自律行動を有効にするには:
+  #   1. enabled を true に変更
+  #   2. gemini-api-key にGoogle AI StudioのAPIキーを入力
+  #      取得先: https://aistudio.google.com/apikey
+  #   3. サーバーを再起動、または /ainpc reload を実行
+  enabled: false
+
+  # Google AI Studio APIキー (必須)
+  # 例: "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  gemini-api-key: ""
+
+  # 使用モデル (変更不要)
+  gemini-flash-model: "gemini-3-flash-preview"
+  gemini-pro-model: "gemini-3-pro-preview"
+
+  # 同時APIリクエスト上限 (1-5)
+  max-concurrent-requests: 3
+
+  behavior:
+    decision-interval-ticks: 30
+    pathfinder-retry-ticks: 20
+    awareness-radius: 16.0
+    home-radius: 32.0
+
+  conversation:
+    timeout-seconds: 60
+    max-history: 20
+
+  memory:
+    short-term-size: 50
+    long-term-size: 200

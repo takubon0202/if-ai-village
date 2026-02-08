@@ -1,0 +1,14 @@
+{
+  "name": "if-mineai",
+  "version": "1.0.0",
+  "description": "IF MineAI - Minecraft Plugin Development",
+  "type": "module",
+  "scripts": {
+    "codex": "node scripts/codex-helper.js",
+    "gemini": "node scripts/gemini-helper.js",
+    "setup": "node scripts/setup.js",
+    "build": "cd . && gradlew build",
+    "clean": "cd . && gradlew clean"
+  },
+  "private": true
+}
