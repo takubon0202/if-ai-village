@@ -62,7 +62,7 @@ public class AIBrainManager {
         memoryStore = new MemoryStore(plugin);
         geminiClient = new GeminiClient(aiConfig);
         promptBuilder = new GeminiPromptBuilder(personalityLoader);
-        responseParser = new GeminiResponseParser();
+        responseParser = new GeminiResponseParser(memoryStore);
         awarenessAgent = new AwarenessAgent(aiConfig);
         movementAgent = new MovementAgent(aiConfig);
         conversationAgent = new ConversationAgent(aiConfig, memoryStore);

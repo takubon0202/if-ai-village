@@ -14,7 +14,7 @@ commands:
     permission: ifmineai.counselor.spawn
   ainpc:
     description: AI管理コマンド - AI状態・設定・デバッグ
-    usage: /ainpc <help|status|setkey|enable|disable|reload|debug|personality|stats>
+    usage: /ainpc <help|status|reload|debug|personality|stats>
     permission: ifmineai.ai.admin
   mineai:
     description: IF MineAI 総合メニュー・ヘルプ・ガイド

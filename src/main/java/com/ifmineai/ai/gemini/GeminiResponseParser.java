@@ -8,6 +8,10 @@ import com.google.genai.types.Part;
 import com.ifmineai.ai.NPCBrain;
 import com.ifmineai.ai.action.*;
 import com.ifmineai.ai.agent.MemoryAgent;
+import com.ifmineai.ai.agent.MovementAgent;
+import com.ifmineai.ai.memory.MemoryEntry;
+import com.ifmineai.ai.memory.MemoryStore;
+import com.ifmineai.ai.memory.MemoryType;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -28,6 +32,11 @@ import java.util.logging.Logger;
 public class GeminiResponseParser {
 
     private static final Logger LOGGER = Logger.getLogger(GeminiResponseParser.class.getName());
+    private final MemoryStore memoryStore;
+
+    public GeminiResponseParser(MemoryStore memoryStore) {
+        this.memoryStore = memoryStore;
+    }
 
     public List<NPCAction> parse(GenerateContentResponse response, Mob npc, NPCBrain brain) {
         List<NPCAction> actions = new ArrayList<>();
@@ -100,7 +109,7 @@ public class GeminiResponseParser {
         if (home == null) return null;
 
         Location target = home.clone().add(offsetX, 0, offsetZ);
-        target.setY(npc.getWorld().getHighestBlockYAt(target.getBlockX(), target.getBlockZ()));
+        target.setY(MovementAgent.findGroundY(npc.getWorld(), target.getBlockX(), target.getBlockZ(), npc.getLocation().getBlockY() + 10));
 
         return new WalkToAction(target, speed);
     }
@@ -122,6 +131,7 @@ public class GeminiResponseParser {
 
         double ratio = stopDistance / dist;
         Location target = playerLoc.clone().add(dx * ratio, 0, dz * ratio);
+        target.setY(MovementAgent.findGroundY(npc.getWorld(), target.getBlockX(), target.getBlockZ(), npc.getLocation().getBlockY() + 10));
         return new WalkToAction(target, 1.2);
     }
 
@@ -170,9 +180,13 @@ public class GeminiResponseParser {
     }
 
     private NPCAction parseRemember(Map<String, Object> args, NPCBrain brain) {
-        // rememberはアクションではなく記憶操作 - nullを返して別途処理
-        // ここでは記憶をMemoryAgentに直接追加する代わりに、
-        // 軽量な Idle を返す
+        String content = getString(args, "content", null);
+        int importance = getInt(args, "importance", 5);
+        if (content != null && memoryStore != null) {
+            importance = Math.max(1, Math.min(10, importance));
+            memoryStore.addMemory(brain.getNpcUUID(), new MemoryEntry(MemoryType.OBSERVATION, content, importance));
+            LOGGER.info("記憶保存: [" + brain.getNpcUUID() + "] " + content + " (重要度:" + importance + ")");
+        }
         return new IdleAction(5);
     }
 

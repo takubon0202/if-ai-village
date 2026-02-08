@@ -102,7 +102,7 @@ public class GeminiPromptBuilder {
         sb.append("話し方: ").append(profile.speechStyle()).append("\n\n");
         sb.append("ルール:\n");
         sb.append("- プレイヤー「").append(playerName).append("」と会話しています\n");
-        sb.append("- 短く自然な日本語で応答してください (1〜2文)\n");
+        sb.append("- 日本語で自然に応答してください (最大200文字程度)\n");
         sb.append("- キャラクターの性格を反映した口調で話してください\n");
         sb.append("- Minecraftの世界観を崩さないでください\n");
 

@@ -68,11 +68,11 @@ public class JoinGuideListener implements Listener {
         } else if (!config.isEnabledFlag()) {
             aiStatus = Component.text("  AI: ", NamedTextColor.WHITE)
                     .append(Component.text("無効", NamedTextColor.RED))
-                    .append(Component.text(" - /ainpc enable で有効化", NamedTextColor.YELLOW));
+                    .append(Component.text(" - config.ymlで設定してください", NamedTextColor.YELLOW));
         } else if (!config.isApiKeyValid()) {
             aiStatus = Component.text("  AI: ", NamedTextColor.WHITE)
                     .append(Component.text("APIキー未設定", NamedTextColor.RED))
-                    .append(Component.text(" - /ainpc setkey <キー>", NamedTextColor.YELLOW));
+                    .append(Component.text(" - config.ymlで設定してください", NamedTextColor.YELLOW));
         } else {
             aiStatus = Component.text("  AI: ", NamedTextColor.WHITE)
                     .append(Component.text("準備中", NamedTextColor.YELLOW));
@@ -135,11 +135,7 @@ public class JoinGuideListener implements Listener {
                                     .decoration(TextDecoration.BOLD, false))
             );
             player.sendMessage(
-                    Component.text("       /ainpc setkey <APIキー> → /ainpc enable → /ainpc reload", ACCENT)
-                            .clickEvent(ClickEvent.suggestCommand("/ainpc setkey "))
-                            .hoverEvent(HoverEvent.showText(
-                                    Component.text("クリックでAPIキー設定を開始", NamedTextColor.YELLOW)
-                            ))
+                    Component.text("       config.ymlでAPIキーを設定 → サーバー再起動", DESC_COLOR)
             );
         }
 

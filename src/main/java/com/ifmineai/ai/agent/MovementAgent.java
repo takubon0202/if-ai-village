@@ -6,6 +6,8 @@ import com.ifmineai.ai.action.WalkToAction;
 import com.ifmineai.config.AIConfig;
 
 import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Mob;
 
 import java.util.Random;
@@ -40,14 +42,14 @@ public class MovementAgent implements BehaviorAgent {
 
         Location target = home.clone().add(offsetX, 0, offsetZ);
 
-        // Y座標を地面に合わせる
-        target.setY(npc.getWorld().getHighestBlockYAt(target.getBlockX(), target.getBlockZ()));
+        // Y座標を地面に合わせる (屋根・木の上を回避)
+        target.setY(findGroundY(npc.getWorld(), target.getBlockX(), target.getBlockZ(), npc.getLocation().getBlockY() + 10));
 
         // ホーム範囲内か確認
         if (target.distanceSquared(home) > radius * radius) {
             // 範囲外なら範囲内に収める
             target = home.clone().add(offsetX * 0.3, 0, offsetZ * 0.3);
-            target.setY(npc.getWorld().getHighestBlockYAt(target.getBlockX(), target.getBlockZ()));
+            target.setY(findGroundY(npc.getWorld(), target.getBlockX(), target.getBlockZ(), npc.getLocation().getBlockY() + 10));
         }
 
         return new WalkToAction(target, 1.0);
@@ -75,6 +77,28 @@ public class MovementAgent implements BehaviorAgent {
 
         double ratio = stopDistance / dist;
         Location target = playerLoc.clone().add(dx * ratio, 0, dz * ratio);
+        target.setY(findGroundY(npc.getWorld(), target.getBlockX(), target.getBlockZ(), npc.getLocation().getBlockY() + 10));
         return new WalkToAction(target, 1.2);
+    }
+
+    /**
+     * 指定座標の地面Y座標を検出する。
+     * getHighestBlockYAt() は屋根・木の上を返すため、NPCの現在Y付近から下方向に走査して
+     * 固体ブロック+上が非固体の位置を返す。
+     */
+    public static int findGroundY(World world, int x, int z, int startY) {
+        int maxY = Math.min(startY, world.getMaxHeight() - 1);
+        int minY = world.getMinHeight();
+
+        for (int y = maxY; y > minY; y--) {
+            Block block = world.getBlockAt(x, y, z);
+            Block above = world.getBlockAt(x, y + 1, z);
+            if (block.getType().isSolid() && !above.getType().isSolid()) {
+                return y + 1;
+            }
+        }
+
+        // 見つからなかった場合はフォールバック
+        return world.getHighestBlockYAt(x, z) + 1;
     }
 }

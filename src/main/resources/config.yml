@@ -10,7 +10,7 @@ ai:
   #   1. enabled を true に変更
   #   2. gemini-api-key にGoogle AI StudioのAPIキーを入力
   #      取得先: https://aistudio.google.com/apikey
-  #   3. サーバーを再起動、または /ainpc reload を実行
+  #   3. サーバーを再起動してください
   enabled: false
 
   # Google AI Studio APIキー (必須)

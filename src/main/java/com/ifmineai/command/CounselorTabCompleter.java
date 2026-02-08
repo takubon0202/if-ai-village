@@ -23,7 +23,7 @@ public class CounselorTabCompleter implements TabCompleter {
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                        @NotNull String alias, @NotNull String[] args) {
         if (args.length == 1) {
-            return filterStartsWith(List.of("spawn", "remove", "list", "help"), args[0]);
+            return filterStartsWith(List.of("spawn", "remove", "list", "help", "menu", "wizard"), args[0]);
         }
 
         if (args.length == 2) {
@@ -34,20 +34,33 @@ public class CounselorTabCompleter implements TabCompleter {
                 case "remove" -> {
                     return filterStartsWith(List.of("nearest", "all"), args[1]);
                 }
+                case "wizard" -> {
+                    return filterStartsWith(List.of("spawn", "remove"), args[1]);
+                }
             }
         }
 
-        if (args.length == 3 && args[0].equalsIgnoreCase("spawn")) {
-            return filterStartsWith(List.of("3", "5", "10", "15", "20", "30", "50"), args[2]);
+        if (args.length == 3) {
+            if (args[0].equalsIgnoreCase("spawn")) {
+                return filterStartsWith(List.of("3", "5", "10", "15", "20", "30", "50"), args[2]);
+            }
+            if (args[0].equalsIgnoreCase("wizard") && args[1].equalsIgnoreCase("spawn")) {
+                return filterStartsWith(List.of("north", "south", "east", "west"), args[2]);
+            }
         }
 
-        if (args.length == 4 && args[0].equalsIgnoreCase("spawn")) {
-            List<String> types = new ArrayList<>(List.of("counselor", "guard", "merchant", "explorer"));
-            AIBrainManager brainManager = plugin.getAIBrainManager();
-            if (brainManager != null && brainManager.getPersonalityLoader() != null) {
-                types = new ArrayList<>(brainManager.getPersonalityLoader().getAllProfiles().keySet());
+        if (args.length == 4) {
+            if (args[0].equalsIgnoreCase("spawn")) {
+                List<String> types = new ArrayList<>(List.of("counselor", "guard", "merchant", "explorer"));
+                AIBrainManager brainManager = plugin.getAIBrainManager();
+                if (brainManager != null && brainManager.getPersonalityLoader() != null) {
+                    types = new ArrayList<>(brainManager.getPersonalityLoader().getAllProfiles().keySet());
+                }
+                return filterStartsWith(types, args[3]);
             }
-            return filterStartsWith(types, args[3]);
+            if (args[0].equalsIgnoreCase("wizard") && args[1].equalsIgnoreCase("spawn")) {
+                return filterStartsWith(List.of("3", "5", "10", "15", "20", "30", "50"), args[3]);
+            }
         }
 
         return List.of();

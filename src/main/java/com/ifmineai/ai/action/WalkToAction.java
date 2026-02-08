@@ -3,7 +3,11 @@ package com.ifmineai.ai.action;
 import org.bukkit.Location;
 import org.bukkit.entity.Mob;
 
+import java.util.logging.Logger;
+
 public class WalkToAction implements NPCAction {
+
+    private static final Logger LOGGER = Logger.getLogger(WalkToAction.class.getName());
 
     private final Location target;
     private final double speed;
@@ -31,6 +35,8 @@ public class WalkToAction implements NPCAction {
         ticksElapsed++;
 
         if (ticksElapsed >= MAX_TICKS) {
+            LOGGER.fine("WalkTo タイムアウト: " + describe() + " NPC=" + npc.getName()
+                    + " 現在地=(" + npc.getLocation().getBlockX() + "," + npc.getLocation().getBlockY() + "," + npc.getLocation().getBlockZ() + ")");
             npc.setAI(false);
             return true;
         }
@@ -59,6 +65,6 @@ public class WalkToAction implements NPCAction {
 
     @Override
     public String describe() {
-        return "Walking to (" + target.getBlockX() + ", " + target.getBlockZ() + ")";
+        return "Walking to (" + target.getBlockX() + ", " + target.getBlockY() + ", " + target.getBlockZ() + ")";
     }
 }

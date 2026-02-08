@@ -188,21 +188,6 @@ public class MineAICommandHandler implements CommandExecutor {
 
                 player.sendMessage(Component.text("  --- AI管理コマンド (/ainpc) ---", HEADER_COLOR));
 
-                sendHelpEntry(player, "/ainpc setkey <APIキー>",
-                        "Gemini APIキーを設定します",
-                        "Google AI Studioで取得したキーを入力\n取得先: https://aistudio.google.com/apikey\n「AIza」で始まるキーです",
-                        "/ainpc setkey ");
-
-                sendHelpEntry(player, "/ainpc enable",
-                        "AIを有効化します",
-                        "APIキー設定後に実行\n有効化後は /ainpc reload も必要",
-                        "/ainpc enable");
-
-                sendHelpEntry(player, "/ainpc disable",
-                        "AIを無効化します",
-                        "NPCは従来のパトロールモードになります",
-                        "/ainpc disable");
-
                 sendHelpEntry(player, "/ainpc status",
                         "AI状態を表示します",
                         "APIキー・有効状態・NPC数・モデル情報を表示",
@@ -365,42 +350,33 @@ public class MineAICommandHandler implements CommandExecutor {
         player.sendMessage(Component.text("     無料で取得できます (Google アカウントが必要)", DESC_COLOR));
         player.sendMessage(Component.empty());
 
-        // Step 2: APIキー設定
-        Component step2Status = hasKey
+        // Step 2: config.yml編集
+        Component step2Status = (hasKey && enabled)
                 ? Component.text(" [完了]", NamedTextColor.GREEN)
                 : Component.text(" [未完了]", NamedTextColor.RED);
         player.sendMessage(
-                Component.text("  2. APIキーをプラグインに設定", HEADER_COLOR, TextDecoration.BOLD)
+                Component.text("  2. config.yml を編集してAIを有効化", HEADER_COLOR, TextDecoration.BOLD)
                         .append(step2Status.decoration(TextDecoration.BOLD, false))
         );
-        sendClickableCmd(player, "/ainpc setkey <ここにAPIキーを貼り付け>");
+        player.sendMessage(Component.text("     plugins/IFMineAI/config.yml を開き:", DESC_COLOR));
+        player.sendMessage(Component.text("     - ai.gemini-api-key に取得したAPIキーを貼り付け", DESC_COLOR));
+        player.sendMessage(Component.text("     - ai.enabled を true に変更", DESC_COLOR));
         player.sendMessage(Component.empty());
 
-        // Step 3: AI有効化
-        Component step3Status = enabled
+        // Step 3: サーバー再起動
+        Component step3Status = running
                 ? Component.text(" [完了]", NamedTextColor.GREEN)
                 : Component.text(" [未完了]", NamedTextColor.RED);
         player.sendMessage(
-                Component.text("  3. AIを有効にする", HEADER_COLOR, TextDecoration.BOLD)
+                Component.text("  3. サーバーを再起動して設定を反映", HEADER_COLOR, TextDecoration.BOLD)
                         .append(step3Status.decoration(TextDecoration.BOLD, false))
         );
-        sendClickableCmd(player, "/ainpc enable");
+        player.sendMessage(Component.text("     サーバーを再起動、または /ainpc reload を実行", DESC_COLOR));
         player.sendMessage(Component.empty());
 
-        // Step 4: リロード
-        Component step4Status = running
-                ? Component.text(" [完了]", NamedTextColor.GREEN)
-                : Component.text(" [未完了]", NamedTextColor.RED);
+        // Step 4: NPCスポーン
         player.sendMessage(
-                Component.text("  4. 設定を反映する", HEADER_COLOR, TextDecoration.BOLD)
-                        .append(step4Status.decoration(TextDecoration.BOLD, false))
-        );
-        sendClickableCmd(player, "/ainpc reload");
-        player.sendMessage(Component.empty());
-
-        // Step 5: NPCスポーン
-        player.sendMessage(
-                Component.text("  5. AI NPCをスポーン!", HEADER_COLOR, TextDecoration.BOLD)
+                Component.text("  4. AI NPCをスポーン!", HEADER_COLOR, TextDecoration.BOLD)
         );
         sendClickableCmd(player, "/counselor spawn north 10 counselor");
         player.sendMessage(Component.text("     NPCが自律的に歩き回り、近づくと挨拶します!", DESC_COLOR));
@@ -470,9 +446,6 @@ public class MineAICommandHandler implements CommandExecutor {
         // /ainpc 系
         if (player.hasPermission("ifmineai.ai.admin")) {
             player.sendMessage(Component.text("  --- /ainpc (AI管理) ---", HEADER_COLOR));
-            sendCmdLine(player, "/ainpc setkey <APIキー>", "APIキー設定");
-            sendCmdLine(player, "/ainpc enable", "AI有効化");
-            sendCmdLine(player, "/ainpc disable", "AI無効化");
             sendCmdLine(player, "/ainpc status", "AI状態表示");
             sendCmdLine(player, "/ainpc reload", "設定リロード");
             sendCmdLine(player, "/ainpc debug [UUID]", "デバッグ情報");

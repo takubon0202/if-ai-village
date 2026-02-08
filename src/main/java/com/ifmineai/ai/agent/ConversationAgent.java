@@ -83,7 +83,7 @@ public class ConversationAgent implements BehaviorAgent {
                     addHistory(npcUUID, "assistant", response);
                     memoryStore.addMemory(npcUUID, new MemoryEntry(
                             MemoryType.INTERACTION,
-                            playerName + ": " + message + " → 応答: " + truncate(response, 50),
+                            playerName + ": " + message + " → 応答: " + truncate(response, 100),
                             2
                     ));
                     List<NPCAction> actions = new ArrayList<>();

@@ -54,70 +54,10 @@ public class AICommandHandler implements CommandExecutor {
             case "personality" -> handlePersonality(player, args);
             case "reload" -> handleReload(player);
             case "stats" -> handleStats(player);
-            case "setkey" -> handleSetKey(player, args);
-            case "enable" -> handleEnable(player);
-            case "disable" -> handleDisable(player);
             default -> sendUsage(player);
         }
 
         return true;
-    }
-
-    private void handleSetKey(Player player, String[] args) {
-        if (args.length < 2) {
-            player.sendMessage(Component.text("使い方: /ainpc setkey <Gemini APIキー>", NamedTextColor.RED));
-            player.sendMessage(Component.text("APIキー取得先: https://aistudio.google.com/apikey", NamedTextColor.GRAY));
-            return;
-        }
-
-        String key = args[1];
-
-        if (!AIConfig.validateApiKeyFormat(key)) {
-            player.sendMessage(Component.text("APIキーの形式が不正です", NamedTextColor.RED));
-            player.sendMessage(Component.text("Google AI Studioで取得した「AIza」で始まるキーを入力してください", NamedTextColor.GRAY));
-            return;
-        }
-
-        if (aiConfig.setApiKey(key)) {
-            // キーをマスク表示
-            String masked = key.substring(0, 8) + "..." + key.substring(key.length() - 4);
-            player.sendMessage(Component.text("APIキーを設定しました: " + masked, NamedTextColor.GREEN));
-
-            if (!aiConfig.isEnabledFlag()) {
-                player.sendMessage(Component.text("AIを有効にするには /ainpc enable を実行してください", NamedTextColor.YELLOW));
-            } else if (!brainManager.isEnabled()) {
-                player.sendMessage(Component.text("設定を反映するには /ainpc reload を実行してください", NamedTextColor.YELLOW));
-            }
-        } else {
-            player.sendMessage(Component.text("APIキーの保存に失敗しました", NamedTextColor.RED));
-        }
-    }
-
-    private void handleEnable(Player player) {
-        if (brainManager.isEnabled()) {
-            player.sendMessage(Component.text("AIは既に有効です", NamedTextColor.YELLOW));
-            return;
-        }
-
-        if (!aiConfig.isApiKeyValid()) {
-            player.sendMessage(Component.text("先にAPIキーを設定してください: /ainpc setkey <キー>", NamedTextColor.RED));
-            return;
-        }
-
-        aiConfig.setAiEnabled(true);
-        player.sendMessage(Component.text("AIを有効にしました", NamedTextColor.GREEN));
-        player.sendMessage(Component.text("反映するには /ainpc reload を実行してください", NamedTextColor.YELLOW));
-    }
-
-    private void handleDisable(Player player) {
-        if (!aiConfig.isEnabledFlag()) {
-            player.sendMessage(Component.text("AIは既に無効です", NamedTextColor.YELLOW));
-            return;
-        }
-
-        aiConfig.setAiEnabled(false);
-        player.sendMessage(Component.text("AIを無効にしました。NPCは従来のパトロールモードで動作します", NamedTextColor.GREEN));
-        player.sendMessage(Component.text("反映するには /ainpc reload を実行してください", NamedTextColor.YELLOW));
     }
 
     private void handleStatus(Player player) {
@@ -145,7 +85,7 @@ public class AICommandHandler implements CommandExecutor {
                     .append(Component.text("形式不正", NamedTextColor.RED)));
         } else {
             player.sendMessage(Component.text("APIキー: ", NamedTextColor.WHITE)
-                    .append(Component.text("未設定 (/ainpc setkey <キー>)", NamedTextColor.RED)));
+                    .append(Component.text("未設定 (config.ymlで設定してください)", NamedTextColor.RED)));
         }
 
         // ブレイン数
@@ -291,9 +231,6 @@ public class AICommandHandler implements CommandExecutor {
         );
         player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", TextColor.color(0x555555)));
 
-        sendAinpcHelpLine(player, "/ainpc setkey <APIキー>", "Gemini APIキーを設定", accent, desc);
-        sendAinpcHelpLine(player, "/ainpc enable", "AIを有効化", accent, desc);
-        sendAinpcHelpLine(player, "/ainpc disable", "AIを無効化 (パトロールに戻る)", accent, desc);
         sendAinpcHelpLine(player, "/ainpc status", "AI状態・APIキー・NPC数を表示", accent, desc);
         sendAinpcHelpLine(player, "/ainpc reload", "設定リロード・AI再初期化", accent, desc);
         sendAinpcHelpLine(player, "/ainpc debug [UUID]", "NPCデバッグ情報", accent, desc);

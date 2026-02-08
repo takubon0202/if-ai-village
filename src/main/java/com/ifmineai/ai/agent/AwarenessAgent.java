@@ -82,7 +82,7 @@ public class AwarenessAgent implements BehaviorAgent {
         }
 
         return new DecisionContext(
-                brain.getData().getPersonalityType(),
+                npc.getName(),
                 brain.getData().getPersonalityType(),
                 brain.getState(),
                 npcLoc,

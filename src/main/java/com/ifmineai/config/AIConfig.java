@@ -3,7 +3,6 @@ package com.ifmineai.config;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.IOException;
 import java.util.logging.Logger;
 
 public class AIConfig {
@@ -61,29 +60,6 @@ public class AIConfig {
     }
 
     /**
-     * APIキーをconfig.ymlに保存し、メモリ上の値も更新する
-     */
-    public boolean setApiKey(String apiKey) {
-        String trimmed = apiKey.trim();
-        if (!validateApiKeyFormat(trimmed)) {
-            return false;
-        }
-        config.set("ai.gemini-api-key", trimmed);
-        plugin.saveConfig();
-        this.geminiApiKey = trimmed;
-        return true;
-    }
-
-    /**
-     * AI有効/無効をconfig.ymlに保存
-     */
-    public void setAiEnabled(boolean enabled) {
-        config.set("ai.enabled", enabled);
-        plugin.saveConfig();
-        this.aiEnabled = enabled;
-    }
-
-    /**
      * APIキーの形式を簡易チェック
      */
     public static boolean validateApiKeyFormat(String key) {
@@ -107,7 +83,6 @@ public class AIConfig {
             logger.warning("  config.yml の ai.gemini-api-key に");
             logger.warning("  Google AI Studio APIキーを入力してください");
             logger.warning("  取得先: https://aistudio.google.com/apikey");
-            logger.warning("  またはゲーム内で /ainpc setkey <キー> を実行");
         } else if (!validateApiKeyFormat(geminiApiKey)) {
             logger.warning("  AI: APIキーの形式が不正です");
             logger.warning("  「AIza」で始まる正しいキーを設定してください");

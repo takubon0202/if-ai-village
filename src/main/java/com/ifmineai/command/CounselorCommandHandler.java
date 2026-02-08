@@ -41,12 +41,14 @@ public class CounselorCommandHandler implements CommandExecutor {
         }
 
         if (args.length == 0) {
-            sendHelp(player);
+            showMenu(player);
             return true;
         }
 
         switch (args[0].toLowerCase()) {
             case "help" -> sendHelp(player);
+            case "menu" -> showMenu(player);
+            case "wizard" -> handleWizard(player, args);
             case "spawn" -> handleSpawn(player, args);
             case "remove" -> handleRemove(player, args);
             case "list" -> counselorManager.listCounselors(player);
@@ -154,6 +156,340 @@ public class CounselorCommandHandler implements CommandExecutor {
             default -> player.sendMessage(Component.text("使い方: /counselor remove <nearest|all>", NamedTextColor.RED));
         }
     }
+
+    // ===== メニュー / ウィザード =====
+
+    private void showMenu(Player player) {
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+        player.sendMessage(
+                Component.text("  NPC管理メニュー", NamedTextColor.GOLD, TextDecoration.BOLD)
+        );
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+        player.sendMessage(Component.empty());
+
+        // [スポーン] ボタン
+        player.sendMessage(
+                Component.text("  ")
+                        .append(Component.text(" スポーン ", NamedTextColor.WHITE)
+                                .decorate(TextDecoration.BOLD)
+                                .color(TextColor.color(0x000000))
+                                .hoverEvent(HoverEvent.showText(
+                                        Component.text("NPCを新しくスポーンします", NamedTextColor.GREEN)
+                                ))
+                                .clickEvent(ClickEvent.runCommand("/counselor wizard spawn")))
+                        .append(Component.text("  "))
+                        // [削除] ボタン
+                        .append(Component.text(" 削除 ", NamedTextColor.WHITE)
+                                .decorate(TextDecoration.BOLD)
+                                .color(TextColor.color(0x000000))
+                                .hoverEvent(HoverEvent.showText(
+                                        Component.text("NPCを削除します", NamedTextColor.RED)
+                                ))
+                                .clickEvent(ClickEvent.runCommand("/counselor wizard remove")))
+                        .append(Component.text("  "))
+                        // [一覧] ボタン
+                        .append(Component.text(" 一覧 ", NamedTextColor.WHITE)
+                                .decorate(TextDecoration.BOLD)
+                                .color(TextColor.color(0x000000))
+                                .hoverEvent(HoverEvent.showText(
+                                        Component.text("スポーン済みNPCの一覧を表示", NamedTextColor.AQUA)
+                                ))
+                                .clickEvent(ClickEvent.runCommand("/counselor list")))
+        );
+
+        // 見やすいボタン行（色付き角括弧）
+        player.sendMessage(Component.empty());
+        player.sendMessage(
+                Component.text("  ")
+                        .append(Component.text("[", LINE_COLOR))
+                        .append(Component.text("スポーン", NamedTextColor.GREEN)
+                                .decorate(TextDecoration.BOLD)
+                                .clickEvent(ClickEvent.runCommand("/counselor wizard spawn"))
+                                .hoverEvent(HoverEvent.showText(
+                                        Component.text("NPCを新しくスポーンします", NamedTextColor.GREEN)
+                                )))
+                        .append(Component.text("]", LINE_COLOR))
+                        .append(Component.text("  "))
+                        .append(Component.text("[", LINE_COLOR))
+                        .append(Component.text("削除", NamedTextColor.RED)
+                                .decorate(TextDecoration.BOLD)
+                                .clickEvent(ClickEvent.runCommand("/counselor wizard remove"))
+                                .hoverEvent(HoverEvent.showText(
+                                        Component.text("NPCを削除します", NamedTextColor.RED)
+                                )))
+                        .append(Component.text("]", LINE_COLOR))
+                        .append(Component.text("  "))
+                        .append(Component.text("[", LINE_COLOR))
+                        .append(Component.text("一覧", NamedTextColor.AQUA)
+                                .decorate(TextDecoration.BOLD)
+                                .clickEvent(ClickEvent.runCommand("/counselor list"))
+                                .hoverEvent(HoverEvent.showText(
+                                        Component.text("スポーン済みNPCの一覧を表示", NamedTextColor.AQUA)
+                                )))
+                        .append(Component.text("]", LINE_COLOR))
+        );
+
+        player.sendMessage(Component.empty());
+        player.sendMessage(
+                Component.text("  → ", DESC_COLOR)
+                        .append(Component.text("/counselor help", ACCENT)
+                                .clickEvent(ClickEvent.runCommand("/counselor help"))
+                                .hoverEvent(HoverEvent.showText(
+                                        Component.text("詳細なヘルプを表示", NamedTextColor.YELLOW)
+                                )))
+                        .append(Component.text(" で詳細ヘルプ", DESC_COLOR))
+        );
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+    }
+
+    private void handleWizard(Player player, String[] args) {
+        if (args.length < 2) {
+            showMenu(player);
+            return;
+        }
+
+        switch (args[1].toLowerCase()) {
+            case "spawn" -> {
+                if (args.length == 2) {
+                    showWizardSpawnDirection(player);
+                } else if (args.length == 3) {
+                    showWizardSpawnRange(player, args[2].toLowerCase());
+                } else if (args.length == 4) {
+                    showWizardSpawnPersonality(player, args[2].toLowerCase(), args[3]);
+                }
+            }
+            case "remove" -> showWizardRemove(player);
+            default -> showMenu(player);
+        }
+    }
+
+    private void showWizardSpawnDirection(Player player) {
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+        player.sendMessage(
+                Component.text("  スポーン (1/3)", NamedTextColor.GREEN, TextDecoration.BOLD)
+                        .append(Component.text(" - 方角を選択", DESC_COLOR)
+                                .decoration(TextDecoration.BOLD, false))
+        );
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+        player.sendMessage(Component.empty());
+
+        Component buttons = Component.text("  ");
+        String[] directions = {"north", "south", "east", "west"};
+        for (String dir : directions) {
+            buttons = buttons
+                    .append(createDirectionButton(dir))
+                    .append(Component.text("  "));
+        }
+        player.sendMessage(buttons);
+
+        player.sendMessage(Component.empty());
+        sendBackButton(player, "/counselor menu");
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+    }
+
+    private void showWizardSpawnRange(Player player, String direction) {
+        if (!List.of("north", "south", "east", "west").contains(direction)) {
+            player.sendMessage(Component.text("不正な方角です。", NamedTextColor.RED));
+            showWizardSpawnDirection(player);
+            return;
+        }
+
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+        player.sendMessage(
+                Component.text("  スポーン (2/3)", NamedTextColor.GREEN, TextDecoration.BOLD)
+                        .append(Component.text(" - 範囲を選択", DESC_COLOR)
+                                .decoration(TextDecoration.BOLD, false))
+        );
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+        player.sendMessage(
+                Component.text("  方角: ", DESC_COLOR)
+                        .append(Component.text(getDirectionJP(direction), NamedTextColor.YELLOW))
+        );
+        player.sendMessage(Component.empty());
+
+        Component buttons = Component.text("  ");
+        int[] ranges = {3, 5, 10, 15, 20, 30, 50};
+        for (int r : ranges) {
+            buttons = buttons
+                    .append(createRangeButton(direction, r))
+                    .append(Component.text(" "));
+        }
+        player.sendMessage(buttons);
+
+        player.sendMessage(Component.empty());
+        sendBackButton(player, "/counselor wizard spawn");
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+    }
+
+    private void showWizardSpawnPersonality(Player player, String direction, String range) {
+        if (!List.of("north", "south", "east", "west").contains(direction)) {
+            player.sendMessage(Component.text("不正な方角です。", NamedTextColor.RED));
+            showWizardSpawnDirection(player);
+            return;
+        }
+
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+        player.sendMessage(
+                Component.text("  スポーン (3/3)", NamedTextColor.GREEN, TextDecoration.BOLD)
+                        .append(Component.text(" - 性格を選択", DESC_COLOR)
+                                .decoration(TextDecoration.BOLD, false))
+        );
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+        player.sendMessage(
+                Component.text("  方角: ", DESC_COLOR)
+                        .append(Component.text(getDirectionJP(direction), NamedTextColor.YELLOW))
+                        .append(Component.text("  範囲: ", DESC_COLOR))
+                        .append(Component.text(range + "ブロック", NamedTextColor.YELLOW))
+        );
+        player.sendMessage(Component.empty());
+
+        String[] personalities = {"counselor", "guard", "merchant", "explorer"};
+        for (String p : personalities) {
+            player.sendMessage(
+                    Component.text("  ")
+                            .append(createPersonalityButton(direction, range, p))
+            );
+        }
+
+        player.sendMessage(Component.empty());
+        sendBackButton(player, "/counselor wizard spawn " + direction);
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+    }
+
+    private void showWizardRemove(Player player) {
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+        player.sendMessage(
+                Component.text("  NPC削除", NamedTextColor.RED, TextDecoration.BOLD)
+        );
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+        player.sendMessage(Component.empty());
+
+        // [最寄り削除]
+        player.sendMessage(
+                Component.text("  ")
+                        .append(Component.text("[", LINE_COLOR))
+                        .append(Component.text("最寄りのNPCを削除", NamedTextColor.YELLOW)
+                                .decorate(TextDecoration.BOLD)
+                                .clickEvent(ClickEvent.runCommand("/counselor remove nearest"))
+                                .hoverEvent(HoverEvent.showText(
+                                        Component.text("最も近いNPCを1体削除します", NamedTextColor.YELLOW)
+                                )))
+                        .append(Component.text("]", LINE_COLOR))
+        );
+        player.sendMessage(Component.empty());
+
+        // [全NPC削除]
+        player.sendMessage(
+                Component.text("  ")
+                        .append(Component.text("[", LINE_COLOR))
+                        .append(Component.text("全NPCを削除", NamedTextColor.RED)
+                                .decorate(TextDecoration.BOLD)
+                                .clickEvent(ClickEvent.runCommand("/counselor remove all"))
+                                .hoverEvent(HoverEvent.showText(
+                                        Component.text("全てのNPCを削除します (注意!)", NamedTextColor.RED)
+                                )))
+                        .append(Component.text("]", LINE_COLOR))
+        );
+
+        player.sendMessage(Component.empty());
+        sendBackButton(player, "/counselor menu");
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+    }
+
+    // ===== ウィザードヘルパーメソッド =====
+
+    private Component createDirectionButton(String direction) {
+        return Component.text("[", LINE_COLOR)
+                .append(Component.text(getDirectionJP(direction), NamedTextColor.YELLOW)
+                        .decorate(TextDecoration.BOLD)
+                        .clickEvent(ClickEvent.runCommand("/counselor wizard spawn " + direction))
+                        .hoverEvent(HoverEvent.showText(
+                                Component.text(getDirectionJP(direction) + "方向にスポーン", NamedTextColor.YELLOW)
+                        )))
+                .append(Component.text("]", LINE_COLOR));
+    }
+
+    private Component createRangeButton(String direction, int range) {
+        return Component.text("[", LINE_COLOR)
+                .append(Component.text(String.valueOf(range), NamedTextColor.AQUA)
+                        .decorate(TextDecoration.BOLD)
+                        .clickEvent(ClickEvent.runCommand("/counselor wizard spawn " + direction + " " + range))
+                        .hoverEvent(HoverEvent.showText(
+                                Component.text("パトロール範囲: " + range + "ブロック", NamedTextColor.AQUA)
+                        )))
+                .append(Component.text("]", LINE_COLOR));
+    }
+
+    private Component createPersonalityButton(String direction, String range, String personality) {
+        TextColor color = getPersonalityColor(personality);
+        String jpName = getPersonalityJP(personality);
+        String desc = getPersonalityDescription(personality);
+
+        return Component.text("[", LINE_COLOR)
+                .append(Component.text(jpName, color)
+                        .decorate(TextDecoration.BOLD)
+                        .clickEvent(ClickEvent.runCommand("/counselor spawn " + direction + " " + range + " " + personality))
+                        .hoverEvent(HoverEvent.showText(
+                                Component.text(jpName + " - " + desc, color)
+                        )))
+                .append(Component.text("]", LINE_COLOR))
+                .append(Component.text(" " + desc, DESC_COLOR));
+    }
+
+    private String getDirectionJP(String direction) {
+        return switch (direction) {
+            case "north" -> "北";
+            case "south" -> "南";
+            case "east" -> "東";
+            case "west" -> "西";
+            default -> direction;
+        };
+    }
+
+    private String getPersonalityJP(String personality) {
+        return switch (personality) {
+            case "counselor" -> "相談員";
+            case "guard" -> "衛兵";
+            case "merchant" -> "商人";
+            case "explorer" -> "探検家";
+            default -> personality;
+        };
+    }
+
+    private TextColor getPersonalityColor(String personality) {
+        return switch (personality) {
+            case "counselor" -> NamedTextColor.GREEN;
+            case "guard" -> NamedTextColor.RED;
+            case "merchant" -> NamedTextColor.YELLOW;
+            case "explorer" -> NamedTextColor.AQUA;
+            default -> NamedTextColor.WHITE;
+        };
+    }
+
+    private String getPersonalityDescription(String personality) {
+        return switch (personality) {
+            case "counselor" -> "優しく相談に乗ってくれます";
+            case "guard" -> "ワールドの安全を守ります";
+            case "merchant" -> "取引や商売の話をします";
+            case "explorer" -> "冒険や探検が大好きです";
+            default -> "";
+        };
+    }
+
+    private void sendBackButton(Player player, String backCommand) {
+        player.sendMessage(
+                Component.text("  ")
+                        .append(Component.text("[", LINE_COLOR))
+                        .append(Component.text("← 戻る", DESC_COLOR)
+                                .clickEvent(ClickEvent.runCommand(backCommand))
+                                .hoverEvent(HoverEvent.showText(
+                                        Component.text("前の画面に戻る", NamedTextColor.YELLOW)
+                                )))
+                        .append(Component.text("]", LINE_COLOR))
+        );
+    }
+
+    // ===== ヘルプ =====
 
     private void sendHelp(Player player) {
         player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
