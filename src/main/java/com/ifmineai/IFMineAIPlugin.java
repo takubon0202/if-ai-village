@@ -3,12 +3,15 @@ package com.ifmineai;
 import com.ifmineai.ai.AIBrainManager;
 import com.ifmineai.command.AICommandHandler;
 import com.ifmineai.command.AITabCompleter;
+import com.ifmineai.command.CounselorCommandHandler;
+import com.ifmineai.command.CounselorTabCompleter;
+import com.ifmineai.command.MineAICommandHandler;
+import com.ifmineai.command.MineAITabCompleter;
 import com.ifmineai.config.AIConfig;
+import com.ifmineai.listener.JoinGuideListener;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
@@ -19,7 +22,6 @@ import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -50,13 +52,28 @@ public class IFMineAIPlugin extends JavaPlugin implements Listener {
         counselorManager.setAIBrainManager(aiBrainManager);
         aiBrainManager.initialize();
 
+        // ジョインガイドリスナー
+        getServer().getPluginManager().registerEvents(new JoinGuideListener(this), this);
+
+        // /counselor コマンド登録
+        PluginCommand counselorCmd = getCommand("counselor");
+        if (counselorCmd != null) {
+            counselorCmd.setExecutor(new CounselorCommandHandler(this, counselorManager));
+            counselorCmd.setTabCompleter(new CounselorTabCompleter(this));
+        }
+
         // /ainpc コマンド登録
         PluginCommand ainpcCmd = getCommand("ainpc");
         if (ainpcCmd != null) {
-            AICommandHandler cmdHandler = new AICommandHandler(aiBrainManager, aiConfig, this);
-            AITabCompleter tabCompleter = new AITabCompleter(aiBrainManager);
-            ainpcCmd.setExecutor(cmdHandler);
-            ainpcCmd.setTabCompleter(tabCompleter);
+            ainpcCmd.setExecutor(new AICommandHandler(aiBrainManager, aiConfig, this));
+            ainpcCmd.setTabCompleter(new AITabCompleter(aiBrainManager));
+        }
+
+        // /mineai コマンド登録
+        PluginCommand mineaiCmd = getCommand("mineai");
+        if (mineaiCmd != null) {
+            mineaiCmd.setExecutor(new MineAICommandHandler(this));
+            mineaiCmd.setTabCompleter(new MineAITabCompleter());
         }
 
         getLogger().info("IFMineAI プラグインが有効になりました");
@@ -138,131 +155,6 @@ public class IFMineAIPlugin extends JavaPlugin implements Listener {
         aiBrainManager.handlePlayerMessage(npcUUID, player.getName(), message);
 
         // 他のプレイヤーには通常のチャットとして見える
-    }
-
-    @Override
-    public boolean onCommand(@NotNull CommandSender sender, @NotNull Command command,
-                             @NotNull String label, @NotNull String[] args) {
-        if (!command.getName().equalsIgnoreCase("counselor")) {
-            return false;
-        }
-
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage(Component.text("このコマンドはプレイヤーのみ実行できます", NamedTextColor.RED));
-            return true;
-        }
-
-        if (args.length == 0) {
-            sendUsage(player);
-            return true;
-        }
-
-        switch (args[0].toLowerCase()) {
-            case "spawn" -> handleSpawn(player, args);
-            case "remove" -> handleRemove(player, args);
-            case "list" -> counselorManager.listCounselors(player);
-            default -> sendUsage(player);
-        }
-
-        return true;
-    }
-
-    private void handleSpawn(Player player, String[] args) {
-        if (args.length < 3) {
-            player.sendMessage(Component.text(
-                    "使い方: /counselor spawn <north|south|east|west> <範囲> [性格タイプ]", NamedTextColor.RED));
-            return;
-        }
-
-        String direction = args[1].toLowerCase();
-        if (!List.of("north", "south", "east", "west").contains(direction)) {
-            player.sendMessage(Component.text("方角は north, south, east, west のいずれかを指定してください", NamedTextColor.RED));
-            return;
-        }
-
-        int range;
-        try {
-            range = Integer.parseInt(args[2]);
-            if (range < 1) throw new NumberFormatException();
-        } catch (NumberFormatException e) {
-            player.sendMessage(Component.text("範囲は1以上の整数で指定してください", NamedTextColor.RED));
-            return;
-        }
-
-        // 性格タイプ (オプション)
-        String personalityType = "counselor";
-        if (args.length >= 4) {
-            personalityType = args[3].toLowerCase();
-        }
-
-        counselorManager.spawnCounselor(player, direction, range, personalityType);
-    }
-
-    private void handleRemove(Player player, String[] args) {
-        if (args.length < 2) {
-            player.sendMessage(Component.text("使い方: /counselor remove <nearest|all>", NamedTextColor.RED));
-            return;
-        }
-
-        switch (args[1].toLowerCase()) {
-            case "nearest" -> counselorManager.removeNearest(player);
-            case "all" -> {
-                counselorManager.removeAll();
-                player.sendMessage(Component.text("全ての相談員NPCを削除しました", NamedTextColor.YELLOW));
-            }
-            default -> player.sendMessage(Component.text("使い方: /counselor remove <nearest|all>", NamedTextColor.RED));
-        }
-    }
-
-    @Override
-    public @NotNull List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
-                                               @NotNull String alias, @NotNull String[] args) {
-        if (!command.getName().equalsIgnoreCase("counselor")) {
-            return List.of();
-        }
-
-        if (args.length == 1) {
-            return filterStartsWith(List.of("spawn", "remove", "list"), args[0]);
-        }
-
-        if (args.length == 2) {
-            if (args[0].equalsIgnoreCase("spawn")) {
-                return filterStartsWith(List.of("north", "south", "east", "west"), args[1]);
-            }
-            if (args[0].equalsIgnoreCase("remove")) {
-                return filterStartsWith(List.of("nearest", "all"), args[1]);
-            }
-        }
-
-        if (args.length == 3 && args[0].equalsIgnoreCase("spawn")) {
-            return filterStartsWith(List.of("3", "5", "10", "15", "20"), args[2]);
-        }
-
-        if (args.length == 4 && args[0].equalsIgnoreCase("spawn")) {
-            // 性格タイプのサジェスト
-            List<String> types = new ArrayList<>(List.of("counselor", "guard", "merchant", "explorer"));
-            if (aiBrainManager != null && aiBrainManager.getPersonalityLoader() != null) {
-                types = new ArrayList<>(aiBrainManager.getPersonalityLoader().getAllProfiles().keySet());
-            }
-            return filterStartsWith(types, args[3]);
-        }
-
-        return List.of();
-    }
-
-    private List<String> filterStartsWith(List<String> options, String input) {
-        String lower = input.toLowerCase();
-        return options.stream().filter(s -> s.toLowerCase().startsWith(lower)).toList();
-    }
-
-    private void sendUsage(Player player) {
-        player.sendMessage(Component.text("=== /counselor コマンド ===", NamedTextColor.GOLD));
-        player.sendMessage(Component.text("/counselor spawn <方角> <範囲> [性格]", NamedTextColor.WHITE)
-                .append(Component.text(" - NPCをスポーン", NamedTextColor.GRAY)));
-        player.sendMessage(Component.text("/counselor remove <nearest|all>", NamedTextColor.WHITE)
-                .append(Component.text(" - NPCを削除", NamedTextColor.GRAY)));
-        player.sendMessage(Component.text("/counselor list", NamedTextColor.WHITE)
-                .append(Component.text(" - NPC一覧表示", NamedTextColor.GRAY)));
     }
 
     // --- Getters ---

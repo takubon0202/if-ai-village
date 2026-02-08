@@ -8,7 +8,11 @@ import com.ifmineai.ai.personality.PersonalityProfile;
 import com.ifmineai.config.AIConfig;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
+import net.kyori.adventure.text.format.TextDecoration;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -44,6 +48,7 @@ public class AICommandHandler implements CommandExecutor {
         }
 
         switch (args[0].toLowerCase()) {
+            case "help" -> sendHelp(player);
             case "status" -> handleStatus(player);
             case "debug" -> handleDebug(player, args);
             case "personality" -> handlePersonality(player, args);
@@ -265,22 +270,62 @@ public class AICommandHandler implements CommandExecutor {
     }
 
     private void sendUsage(Player player) {
-        player.sendMessage(Component.text("=== /ainpc コマンド ===", NamedTextColor.GOLD));
-        player.sendMessage(Component.text("/ainpc setkey <APIキー>", NamedTextColor.WHITE)
-                .append(Component.text(" - Gemini APIキーを設定", NamedTextColor.GRAY)));
-        player.sendMessage(Component.text("/ainpc enable", NamedTextColor.WHITE)
-                .append(Component.text(" - AIを有効化", NamedTextColor.GRAY)));
-        player.sendMessage(Component.text("/ainpc disable", NamedTextColor.WHITE)
-                .append(Component.text(" - AIを無効化", NamedTextColor.GRAY)));
-        player.sendMessage(Component.text("/ainpc status", NamedTextColor.WHITE)
-                .append(Component.text(" - AI状態表示", NamedTextColor.GRAY)));
-        player.sendMessage(Component.text("/ainpc reload", NamedTextColor.WHITE)
-                .append(Component.text(" - 設定リロード", NamedTextColor.GRAY)));
-        player.sendMessage(Component.text("/ainpc debug [uuid]", NamedTextColor.WHITE)
-                .append(Component.text(" - デバッグ情報", NamedTextColor.GRAY)));
-        player.sendMessage(Component.text("/ainpc personality", NamedTextColor.WHITE)
-                .append(Component.text(" - 性格一覧", NamedTextColor.GRAY)));
-        player.sendMessage(Component.text("/ainpc stats", NamedTextColor.WHITE)
-                .append(Component.text(" - 統計情報", NamedTextColor.GRAY)));
+        player.sendMessage(Component.text("不明なサブコマンドです。", NamedTextColor.RED)
+                .append(Component.text(" /ainpc help", TextColor.color(0x55FFFF))
+                        .clickEvent(ClickEvent.runCommand("/ainpc help"))
+                        .hoverEvent(HoverEvent.showText(
+                                Component.text("クリックでヘルプを表示", NamedTextColor.YELLOW)
+                        )))
+                .append(Component.text(" でヘルプを表示", NamedTextColor.RED)));
+    }
+
+    private void sendHelp(Player player) {
+        TextColor accent = TextColor.color(0x55FFFF);
+        TextColor desc = TextColor.color(0xAAAAAA);
+
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", TextColor.color(0x555555)));
+        player.sendMessage(
+                Component.text("  /ainpc ヘルプ ", NamedTextColor.GOLD, TextDecoration.BOLD)
+                        .append(Component.text("- AI管理コマンド", desc)
+                                .decoration(TextDecoration.BOLD, false))
+        );
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", TextColor.color(0x555555)));
+
+        sendAinpcHelpLine(player, "/ainpc setkey <APIキー>", "Gemini APIキーを設定", accent, desc);
+        sendAinpcHelpLine(player, "/ainpc enable", "AIを有効化", accent, desc);
+        sendAinpcHelpLine(player, "/ainpc disable", "AIを無効化 (パトロールに戻る)", accent, desc);
+        sendAinpcHelpLine(player, "/ainpc status", "AI状態・APIキー・NPC数を表示", accent, desc);
+        sendAinpcHelpLine(player, "/ainpc reload", "設定リロード・AI再初期化", accent, desc);
+        sendAinpcHelpLine(player, "/ainpc debug [UUID]", "NPCデバッグ情報", accent, desc);
+        sendAinpcHelpLine(player, "/ainpc personality", "性格プロファイル一覧", accent, desc);
+        sendAinpcHelpLine(player, "/ainpc stats", "NPC統計 (状態別集計)", accent, desc);
+
+        player.sendMessage(Component.empty());
+        player.sendMessage(
+                Component.text("  → ", desc)
+                        .append(Component.text("/mineai help", accent)
+                                .clickEvent(ClickEvent.runCommand("/mineai help"))
+                                .hoverEvent(HoverEvent.showText(
+                                        Component.text("クリックで全体ヘルプ", NamedTextColor.YELLOW)
+                                )))
+                        .append(Component.text(" で全コマンドのヘルプ", desc))
+        );
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", TextColor.color(0x555555)));
+    }
+
+    private void sendAinpcHelpLine(Player player, String command, String description,
+                                    TextColor accent, TextColor desc) {
+        String suggestBase = command.contains("<") ? command.split("<")[0].trim()
+                : command.contains("[") ? command.split("\\[")[0].trim()
+                : command;
+        player.sendMessage(
+                Component.text("  ")
+                        .append(Component.text(command, accent)
+                                .clickEvent(ClickEvent.suggestCommand(suggestBase))
+                                .hoverEvent(HoverEvent.showText(
+                                        Component.text("クリックでコマンド入力", NamedTextColor.YELLOW)
+                                )))
+                        .append(Component.text(" - " + description, desc))
+        );
     }
 }

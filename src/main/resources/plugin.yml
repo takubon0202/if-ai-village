@@ -8,22 +8,30 @@ authors:
 
 commands:
   counselor:
-    description: Manage counselor NPCs
-    usage: /counselor <spawn|remove|list>
+    description: NPC管理コマンド - NPCのスポーン・削除・一覧
+    usage: /counselor <spawn|remove|list|help>
     aliases: [npc]
     permission: ifmineai.counselor.spawn
   ainpc:
-    description: AI NPC management commands
-    usage: /ainpc <status|debug|personality|reload|stats>
+    description: AI管理コマンド - AI状態・設定・デバッグ
+    usage: /ainpc <help|status|setkey|enable|disable|reload|debug|personality|stats>
     permission: ifmineai.ai.admin
+  mineai:
+    description: IF MineAI 総合メニュー・ヘルプ・ガイド
+    usage: /mineai [help|guide|setup|commands|about]
+    aliases: [ifmineai, mai]
+    permission: ifmineai.use
 
 permissions:
+  ifmineai.use:
+    description: IF MineAIの基本コマンドを使用
+    default: true
   ifmineai.counselor.spawn:
-    description: Allows spawning and removing counselor NPCs
+    description: NPCのスポーン・削除が可能
     default: op
   ifmineai.counselor.use:
-    description: Allows using counselor NPCs (right-click)
+    description: NPCとの対話が可能 (右クリック)
     default: true
   ifmineai.ai.admin:
-    description: Allows AI NPC administration commands
+    description: AI管理コマンドを使用
     default: op

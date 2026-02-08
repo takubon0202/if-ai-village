@@ -24,18 +24,25 @@ public class AITabCompleter implements TabCompleter {
                                        @NotNull String alias, @NotNull String[] args) {
         if (args.length == 1) {
             return filterStartsWith(
-                    List.of("status", "setkey", "enable", "disable", "reload", "debug", "personality", "stats"),
+                    List.of("help", "status", "setkey", "enable", "disable", "reload", "debug", "personality", "stats"),
                     args[0]
             );
         }
 
-        if (args.length == 2 && args[0].equalsIgnoreCase("debug")) {
-            // UUID一覧をサジェスト
-            return brainManager.getBrains().keySet().stream()
-                    .map(UUID::toString)
-                    .filter(s -> s.startsWith(args[1]))
-                    .limit(10)
-                    .toList();
+        if (args.length == 2) {
+            switch (args[0].toLowerCase()) {
+                case "debug" -> {
+                    // UUID一覧をサジェスト
+                    return brainManager.getBrains().keySet().stream()
+                            .map(UUID::toString)
+                            .filter(s -> s.startsWith(args[1]))
+                            .limit(10)
+                            .toList();
+                }
+                case "setkey" -> {
+                    return List.of("<APIキーを貼り付け>");
+                }
+            }
         }
 
         return List.of();
