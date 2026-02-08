@@ -20,6 +20,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -110,10 +111,16 @@ public class IFMineAIPlugin extends JavaPlugin implements Listener {
                     if (currentNPC.equals(npcUUID)) {
                         // 同じNPCなら会話終了
                         activeConversations.remove(player.getUniqueId());
-                        aiBrainManager.getBrain(npcUUID).endConversation();
+                        aiBrainManager.endConversation(npcUUID);
                         player.sendMessage(Component.text("会話を終了しました", NamedTextColor.GRAY));
                         return;
                     }
+                }
+
+                // 別のNPCと会話中なら先にそちらを終了
+                if (activeConversations.containsKey(player.getUniqueId())) {
+                    UUID prevNPC = activeConversations.get(player.getUniqueId());
+                    aiBrainManager.endConversation(prevNPC);
                 }
 
                 // 会話開始
@@ -155,6 +162,15 @@ public class IFMineAIPlugin extends JavaPlugin implements Listener {
         aiBrainManager.handlePlayerMessage(npcUUID, player.getName(), message);
 
         // 他のプレイヤーには通常のチャットとして見える
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        UUID playerUUID = event.getPlayer().getUniqueId();
+        UUID npcUUID = activeConversations.remove(playerUUID);
+        if (npcUUID != null && aiBrainManager != null) {
+            aiBrainManager.endConversation(npcUUID);
+        }
     }
 
     // --- Getters ---

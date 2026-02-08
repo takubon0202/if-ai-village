@@ -52,7 +52,8 @@ public class NPCBrain {
                 currentAction.start(npcEntity);
                 updateStateFromAction(currentAction);
             } else {
-                state = NPCState.IDLE;
+                // 会話中はTALKING状態を維持 (AI決定ループに入らないようにする)
+                state = isInConversation() ? NPCState.TALKING : NPCState.IDLE;
             }
             return;
         }
@@ -66,7 +67,7 @@ public class NPCBrain {
                 currentAction.start(npcEntity);
                 updateStateFromAction(currentAction);
             } else {
-                state = NPCState.IDLE;
+                state = isInConversation() ? NPCState.TALKING : NPCState.IDLE;
             }
         }
     }
@@ -94,6 +95,7 @@ public class NPCBrain {
                 && state == NPCState.IDLE
                 && actionQueue.isEmpty()
                 && currentAction == null
+                && !isInConversation()
                 && ticksSinceLastDecision >= decisionIntervalTicks;
     }
 

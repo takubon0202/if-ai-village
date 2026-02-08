@@ -185,10 +185,15 @@ public class AIBrainManager {
                         brain.enqueueAction(action);
                     }
                 } else {
-                    // フォールバック: ランダム待機
-                    brain.enqueueAction(
-                            new com.ifmineai.ai.action.IdleAction(40 + new Random().nextInt(40))
-                    );
+                    // フォールバック: ランダム歩行 (待機だけでなく動く)
+                    NPCAction randomWalk = movementAgent.generateRandomWalk(npc, brain);
+                    if (randomWalk != null) {
+                        brain.enqueueAction(randomWalk);
+                    } else {
+                        brain.enqueueAction(
+                                new com.ifmineai.ai.action.IdleAction(40 + new Random().nextInt(40))
+                        );
+                    }
                 }
             });
         }).exceptionally(ex -> {
@@ -233,6 +238,8 @@ public class AIBrainManager {
         NPCBrain brain = brains.get(npcUUID);
         if (brain == null) return;
 
+        // 進行中アクションをクリアして会話に集中
+        brain.clearActions();
         brain.startConversation(playerName);
         conversationAgent.startConversation(brain, playerName, geminiClient, promptBuilder)
                 .thenAccept(actions -> {
@@ -246,6 +253,19 @@ public class AIBrainManager {
                     plugin.getLogger().log(Level.WARNING, "会話開始失敗: " + npcUUID, ex);
                     return null;
                 });
+    }
+
+    /**
+     * 会話を終了し、会話履歴もクリアする
+     */
+    public void endConversation(UUID npcUUID) {
+        NPCBrain brain = brains.get(npcUUID);
+        if (brain != null) {
+            brain.endConversation();
+        }
+        if (conversationAgent != null) {
+            conversationAgent.endConversation(npcUUID);
+        }
     }
 
     // --- Getters ---
