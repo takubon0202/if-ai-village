@@ -17,8 +17,8 @@ import java.util.UUID;
 
 public class NPCBrain {
 
-    // 発言クールダウン: 行動ループからの自発的発言は10秒に1回まで
-    private static final int SPEECH_COOLDOWN_TICKS = 200; // 10秒
+    // 発言クールダウン: 行動ループからの自発的発言は30秒に1回まで
+    private static final int SPEECH_COOLDOWN_TICKS = 600; // 30秒
     // ホームリーシュ: ホームからこの倍率を超えたら引き戻す
     private static final double HOME_LEASH_MULTIPLIER = 2.0;
 

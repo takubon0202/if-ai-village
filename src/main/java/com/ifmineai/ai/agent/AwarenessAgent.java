@@ -2,6 +2,8 @@ package com.ifmineai.ai.agent;
 
 import com.ifmineai.ai.DecisionContext;
 import com.ifmineai.ai.NPCBrain;
+import com.ifmineai.ai.memory.MemoryEntry;
+import com.ifmineai.ai.memory.MemoryStore;
 import com.ifmineai.config.AIConfig;
 
 import org.bukkit.Location;
@@ -12,6 +14,7 @@ import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 環境認識エージェント - NPC周辺の環境をスキャンしてDecisionContextを構築
@@ -19,9 +22,14 @@ import java.util.List;
 public class AwarenessAgent implements BehaviorAgent {
 
     private final AIConfig config;
+    private MemoryStore memoryStore;
 
     public AwarenessAgent(AIConfig config) {
         this.config = config;
+    }
+
+    public void setMemoryStore(MemoryStore memoryStore) {
+        this.memoryStore = memoryStore;
     }
 
     @Override
@@ -81,6 +89,15 @@ public class AwarenessAgent implements BehaviorAgent {
             currentActionDesc = brain.getCurrentAction().describe();
         }
 
+        // 最近の記憶を取得
+        List<String> recentMemories = new ArrayList<>();
+        if (memoryStore != null) {
+            List<MemoryEntry> memories = memoryStore.getRecentMemories(brain.getNpcUUID(), 5);
+            for (MemoryEntry mem : memories) {
+                recentMemories.add(mem.content());
+            }
+        }
+
         return new DecisionContext(
                 npc.getName(),
                 brain.getData().getPersonalityType(),
@@ -93,7 +110,7 @@ public class AwarenessAgent implements BehaviorAgent {
                 timeOfDay,
                 weather,
                 biome,
-                List.of(), // 記憶は後でMemoryAgentから注入
+                recentMemories,
                 currentActionDesc
         );
     }

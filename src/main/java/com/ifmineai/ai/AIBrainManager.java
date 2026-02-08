@@ -68,6 +68,7 @@ public class AIBrainManager {
         promptBuilder = new GeminiPromptBuilder(personalityLoader);
         responseParser = new GeminiResponseParser(memoryStore);
         awarenessAgent = new AwarenessAgent(aiConfig);
+        awarenessAgent.setMemoryStore(memoryStore);
         movementAgent = new MovementAgent(aiConfig);
         conversationAgent = new ConversationAgent(aiConfig, memoryStore);
         memoryAgent = new MemoryAgent(aiConfig, memoryStore);
@@ -200,12 +201,18 @@ public class AIBrainManager {
 
             plugin.getServer().getScheduler().runTask(plugin, () -> {
                 brain.markAIResponseReceived();
+
+                // 会話中に行動レスポンスが到着した場合は破棄
+                if (brain.isInConversation()) {
+                    return;
+                }
+
                 if (!actions.isEmpty()) {
                     for (NPCAction action : actions) {
-                        // 発言クールダウンフィルタ: 行動ループからのSayActionはクールダウン中なら除外
+                        // 発言クールダウンフィルタ
                         if (action instanceof SayAction) {
                             if (!brain.canSpeakBehavior()) {
-                                continue; // クールダウン中 → 発言をスキップ
+                                continue;
                             }
                             brain.markSpoke();
                         }
@@ -213,38 +220,34 @@ public class AIBrainManager {
                     }
                     // フィルタ後にアクションが空になった場合のフォールバック
                     if (brain.getActionQueueSize() == 0 && brain.getCurrentAction() == null) {
-                        NPCAction randomWalk = movementAgent.generateRandomWalk(npc, brain);
-                        if (randomWalk != null) {
-                            brain.enqueueAction(randomWalk);
-                        } else {
-                            brain.enqueueAction(
-                                    new com.ifmineai.ai.action.IdleAction(60 + new Random().nextInt(60))
-                            );
-                        }
+                        enqueueIdleFallback(npc, brain);
                     }
                 } else {
-                    // フォールバック: ランダム歩行
-                    NPCAction randomWalk = movementAgent.generateRandomWalk(npc, brain);
-                    if (randomWalk != null) {
-                        brain.enqueueAction(randomWalk);
-                    } else {
-                        brain.enqueueAction(
-                                new com.ifmineai.ai.action.IdleAction(60 + new Random().nextInt(60))
-                        );
-                    }
+                    enqueueIdleFallback(npc, brain);
                 }
             });
         }).exceptionally(ex -> {
             plugin.getLogger().log(Level.WARNING, "AI判断リクエスト失敗: " + brain.getNpcUUID(), ex);
             plugin.getServer().getScheduler().runTask(plugin, () -> {
                 brain.markAIResponseReceived();
-                NPCAction fallback = movementAgent.generateRandomWalk(npc, brain);
-                if (fallback != null) {
-                    brain.enqueueAction(fallback);
+                if (!brain.isInConversation()) {
+                    enqueueIdleFallback(npc, brain);
                 }
             });
             return null;
         });
+    }
+
+    /**
+     * フォールバック: ランダム歩行 or アイドル
+     */
+    private void enqueueIdleFallback(Mob npc, NPCBrain brain) {
+        NPCAction randomWalk = movementAgent.generateRandomWalk(npc, brain);
+        if (randomWalk != null) {
+            brain.enqueueAction(randomWalk);
+        } else {
+            brain.enqueueAction(new com.ifmineai.ai.action.IdleAction(60 + new Random().nextInt(60)));
+        }
     }
 
     /**

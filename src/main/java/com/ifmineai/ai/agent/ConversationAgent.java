@@ -48,18 +48,19 @@ public class ConversationAgent implements BehaviorAgent {
         conversationHistory.computeIfAbsent(npcUUID, k -> new ArrayList<>());
 
         String systemPrompt = promptBuilder.buildConversationSystemPrompt(brain, playerName);
-        String userPrompt = playerName + "があなたに近づいて話しかけてきました。挨拶してください。";
+        String userPrompt = playerName + "が話しかけてきました。短い挨拶を1つだけ返してください（30文字以内）。";
 
         return client.requestConversation(systemPrompt, userPrompt)
                 .thenApply(response -> {
-                    addHistory(npcUUID, "assistant", response);
+                    String cleaned = cleanResponse(response);
+                    addHistory(npcUUID, "assistant", cleaned);
                     memoryStore.addMemory(npcUUID, new MemoryEntry(
                             MemoryType.INTERACTION,
                             playerName + "と会話を開始",
                             3
                     ));
                     List<NPCAction> actions = new ArrayList<>();
-                    actions.add(new SayAction(response, 16.0, brain.getData().getPersonalityType()));
+                    actions.add(new SayAction(cleaned, 16.0, brain.getData().getPersonalityType()));
                     return actions;
                 });
     }
@@ -80,14 +81,15 @@ public class ConversationAgent implements BehaviorAgent {
 
         return client.requestConversation(systemPrompt, userPrompt)
                 .thenApply(response -> {
-                    addHistory(npcUUID, "assistant", response);
+                    String cleaned = cleanResponse(response);
+                    addHistory(npcUUID, "assistant", cleaned);
                     memoryStore.addMemory(npcUUID, new MemoryEntry(
                             MemoryType.INTERACTION,
-                            playerName + ": " + message + " → 応答: " + truncate(response, 100),
+                            playerName + ": " + message + " → " + truncate(cleaned, 80),
                             2
                     ));
                     List<NPCAction> actions = new ArrayList<>();
-                    actions.add(new SayAction(response, 16.0, brain.getData().getPersonalityType()));
+                    actions.add(new SayAction(cleaned, 16.0, brain.getData().getPersonalityType()));
                     return actions;
                 });
     }
@@ -107,6 +109,28 @@ public class ConversationAgent implements BehaviorAgent {
 
     public List<ChatMessage> getHistory(UUID npcUUID) {
         return conversationHistory.getOrDefault(npcUUID, List.of());
+    }
+
+    /**
+     * AI応答のクリーンアップ: 改行除去、長さ制限、余計なプレフィックス除去
+     */
+    private String cleanResponse(String response) {
+        if (response == null || response.isBlank()) return "...";
+        // 改行を空白に変換
+        String cleaned = response.replace("\n", " ").replace("\r", "").trim();
+        // AI が「NPC名: 」のようなプレフィックスを付けることがある → 除去
+        if (cleaned.contains(": ") && cleaned.indexOf(": ") < 20) {
+            String prefix = cleaned.substring(0, cleaned.indexOf(": "));
+            // プレフィックスが短い名前的な文字列なら除去
+            if (!prefix.contains(" ") && prefix.length() <= 15) {
+                cleaned = cleaned.substring(cleaned.indexOf(": ") + 2).trim();
+            }
+        }
+        // 200文字制限
+        if (cleaned.length() > 200) {
+            cleaned = cleaned.substring(0, 197) + "...";
+        }
+        return cleaned.isEmpty() ? "..." : cleaned;
     }
 
     private String truncate(String s, int maxLen) {

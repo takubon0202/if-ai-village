@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "com.ifmineai"
-version = "1.2.4"
+version = "1.2.5"
 description = "IF MineAI - Minecraft Plugin Development"
 
 java {
