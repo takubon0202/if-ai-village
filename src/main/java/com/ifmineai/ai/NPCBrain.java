@@ -6,8 +6,10 @@ import com.ifmineai.ai.action.NPCAction;
 import com.ifmineai.ai.action.WalkToAction;
 import com.ifmineai.ai.agent.MovementAgent;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Mob;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -63,6 +65,10 @@ public class NPCBrain {
 
         if (isInConversation()) {
             ticksSinceLastConversationActivity++;
+            // 会話中は相手プレイヤーの方を向き続ける (10tickごと)
+            if (ticksSinceLastConversationActivity % 10 == 0 && currentAction == null) {
+                lookAtConversationPartner();
+            }
         }
 
         // 現在のアクションがない場合、キューから取得
@@ -178,6 +184,27 @@ public class NPCBrain {
     /** 会話がタイムアウトしたか */
     public boolean isConversationTimedOut(int timeoutTicks) {
         return isInConversation() && ticksSinceLastConversationActivity >= timeoutTicks;
+    }
+
+    /**
+     * 会話中に相手プレイヤーの方を向く
+     */
+    private void lookAtConversationPartner() {
+        if (conversationPartner == null || npcEntity == null) return;
+        Player player = Bukkit.getPlayer(conversationPartner);
+        if (player == null || !player.isOnline()) return;
+
+        Location npcLoc = npcEntity.getLocation();
+        Location playerLoc = player.getLocation();
+        double dx = playerLoc.getX() - npcLoc.getX();
+        double dy = (playerLoc.getY() + player.getHeight() * 0.8) - (npcLoc.getY() + npcEntity.getHeight() * 0.8);
+        double dz = playerLoc.getZ() - npcLoc.getZ();
+        double distXZ = Math.sqrt(dx * dx + dz * dz);
+        float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+        float pitch = (float) -Math.toDegrees(Math.atan2(dy, distXZ));
+        npcLoc.setYaw(yaw);
+        npcLoc.setPitch(pitch);
+        npcEntity.teleport(npcLoc);
     }
 
     // --- ホームリーシュ ---

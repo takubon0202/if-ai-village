@@ -60,7 +60,8 @@ public class ConversationAgent implements BehaviorAgent {
                             3
                     ));
                     List<NPCAction> actions = new ArrayList<>();
-                    actions.add(new SayAction(cleaned, 16.0, brain.getData().getPersonalityType()));
+                    // 会話相手にだけ送信 (プレイヤーの方を向いて話す)
+                    actions.add(new SayAction(cleaned, 16.0, brain.getData().getPersonalityType(), playerName));
                     return actions;
                 });
     }
@@ -89,7 +90,8 @@ public class ConversationAgent implements BehaviorAgent {
                             2
                     ));
                     List<NPCAction> actions = new ArrayList<>();
-                    actions.add(new SayAction(cleaned, 16.0, brain.getData().getPersonalityType()));
+                    // 会話相手にだけ送信 (プレイヤーの方を向いて話す)
+                    actions.add(new SayAction(cleaned, 16.0, brain.getData().getPersonalityType(), playerName));
                     return actions;
                 });
     }
