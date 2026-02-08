@@ -35,13 +35,19 @@ public class GeminiPromptBuilder {
         sb.append("- 社交性: ").append(profile.sociability()).append("/10\n");
         sb.append("- 話し方: ").append(profile.speechStyle()).append("\n\n");
 
-        sb.append("ルール:\n");
+        sb.append("行動ルール:\n");
         sb.append("- 提供されたツール(関数)を使って行動してください\n");
         sb.append("- 1回の応答で1〜3個のツールコールを行ってください\n");
         sb.append("- ホーム地点から").append(brain.getData().getRange() * 2).append("ブロック以内で活動してください\n");
-        sb.append("- プレイヤーが近くにいたら興味を示してください\n");
         sb.append("- 自然で人間らしい行動パターンを心がけてください\n");
-        sb.append("- 同じ行動を繰り返さず、バリエーションを持たせてください\n");
+        sb.append("- 同じ行動を繰り返さず、バリエーションを持たせてください\n\n");
+
+        sb.append("発言ルール (重要):\n");
+        sb.append("- sayツールは控えめに使ってください。基本は移動(walk_to)や観察(look_at)を優先してください\n");
+        sb.append("- プレイヤーが近くにいても、毎回話しかけないでください\n");
+        sb.append("- 会話はプレイヤーが右クリックで開始します。自発的な発言は稀にしてください\n");
+        sb.append("- プレイヤーが近くにいる場合は、look_atやwaveで存在を示すだけで十分です\n");
+        sb.append("- 周囲を散策する行動(walk_to + idle)を中心にしてください\n");
 
         return sb.toString();
     }
@@ -57,6 +63,11 @@ public class GeminiPromptBuilder {
         sb.append("- 天気: ").append(ctx.weather()).append("\n");
         sb.append("- バイオーム: ").append(ctx.biome()).append("\n");
 
+        // 発言クールダウン状態をプロンプトに含める
+        if (!brain.canSpeakBehavior()) {
+            sb.append("- 注意: 最近発言したばかりです。sayは使わずwalk_to, look_at, idle, emote, waveを使ってください\n");
+        }
+
         if (!ctx.nearbyPlayers().isEmpty()) {
             sb.append("\n近くのプレイヤー:\n");
             for (DecisionContext.NearbyPlayer p : ctx.nearbyPlayers()) {
@@ -64,6 +75,10 @@ public class GeminiPromptBuilder {
                         .append(" (距離: ").append(String.format("%.1f", p.distance())).append("ブロック");
                 if (p.isSneaking()) sb.append(", スニーク中");
                 if (p.isSprinting()) sb.append(", ダッシュ中");
+                // 挨拶済みかどうか
+                if (brain.hasGreeted(p.name())) {
+                    sb.append(", 既に挨拶済み");
+                }
                 sb.append(")\n");
             }
         } else {
@@ -85,7 +100,7 @@ public class GeminiPromptBuilder {
             }
         }
 
-        sb.append("\n次に何をしますか？ツールを使って行動してください。");
+        sb.append("\n次に何をしますか？ツールを使って行動してください。散策や観察を優先してください。");
 
         return sb.toString();
     }
@@ -101,10 +116,12 @@ public class GeminiPromptBuilder {
         sb.append("性格: ").append(profile.description()).append("\n");
         sb.append("話し方: ").append(profile.speechStyle()).append("\n\n");
         sb.append("ルール:\n");
-        sb.append("- プレイヤー「").append(playerName).append("」と会話しています\n");
+        sb.append("- プレイヤー「").append(playerName).append("」と1対1で会話しています\n");
         sb.append("- 日本語で自然に応答してください (最大200文字程度)\n");
         sb.append("- キャラクターの性格を反映した口調で話してください\n");
         sb.append("- Minecraftの世界観を崩さないでください\n");
+        sb.append("- 1回の応答で1つのメッセージだけを返してください。複数回に分けて話さないでください\n");
+        sb.append("- 相手の発言に対して的確に応答してください\n");
 
         return sb.toString();
     }
@@ -120,7 +137,6 @@ public class GeminiPromptBuilder {
 
         if (history.size() > 1) {
             sb.append("会話履歴:\n");
-            // 最新5件のみ
             int start = Math.max(0, history.size() - 5);
             for (int i = start; i < history.size(); i++) {
                 ConversationAgent.ChatMessage msg = history.get(i);
@@ -131,7 +147,7 @@ public class GeminiPromptBuilder {
         }
 
         sb.append(playerName).append("の最新メッセージ: ").append(latestMessage).append("\n");
-        sb.append("応答してください。");
+        sb.append("1つの自然な応答を返してください。");
 
         return sb.toString();
     }

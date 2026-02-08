@@ -3,15 +3,24 @@ package com.ifmineai.ai;
 import com.ifmineai.CounselorData;
 import com.ifmineai.ai.action.IdleAction;
 import com.ifmineai.ai.action.NPCAction;
+import com.ifmineai.ai.action.WalkToAction;
+import com.ifmineai.ai.agent.MovementAgent;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Mob;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 public class NPCBrain {
+
+    // 発言クールダウン: 行動ループからの自発的発言は10秒に1回まで
+    private static final int SPEECH_COOLDOWN_TICKS = 200; // 10秒
+    // ホームリーシュ: ホームからこの倍率を超えたら引き戻す
+    private static final double HOME_LEASH_MULTIPLIER = 2.0;
 
     private final UUID npcUUID;
     private final CounselorData data;
@@ -22,7 +31,14 @@ public class NPCBrain {
     private int ticksSinceLastDecision;
     private boolean awaitingAIResponse;
     private DecisionContext lastContext;
-    private String conversationPartner; // プレイヤー名 (会話中の場合)
+    private String conversationPartner;
+
+    // 発言クールダウン
+    private int ticksSinceLastSpeech;
+    // 最近挨拶したプレイヤー (セッション内で重複挨拶を減らす)
+    private final Set<String> greetedPlayers = new HashSet<>();
+    // 会話タイムアウト用
+    private int ticksSinceLastConversationActivity;
 
     public NPCBrain(UUID npcUUID, CounselorData data, Mob npcEntity) {
         this.npcUUID = npcUUID;
@@ -33,17 +49,21 @@ public class NPCBrain {
         this.currentAction = null;
         this.ticksSinceLastDecision = 0;
         this.awaitingAIResponse = false;
+        this.ticksSinceLastSpeech = SPEECH_COOLDOWN_TICKS; // 初回は即話せる
+        this.ticksSinceLastConversationActivity = 0;
     }
 
-    /**
-     * 毎tick呼ばれる。現在のアクションを実行し、完了したら次のアクションへ。
-     */
     public void tick() {
         if (npcEntity == null || npcEntity.isDead() || !npcEntity.isValid()) {
             return;
         }
 
         ticksSinceLastDecision++;
+        ticksSinceLastSpeech++;
+
+        if (isInConversation()) {
+            ticksSinceLastConversationActivity++;
+        }
 
         // 現在のアクションがない場合、キューから取得
         if (currentAction == null) {
@@ -52,7 +72,6 @@ public class NPCBrain {
                 currentAction.start(npcEntity);
                 updateStateFromAction(currentAction);
             } else {
-                // 会話中はTALKING状態を維持 (AI決定ループに入らないようにする)
                 state = isInConversation() ? NPCState.TALKING : NPCState.IDLE;
             }
             return;
@@ -109,6 +128,30 @@ public class NPCBrain {
         ticksSinceLastDecision = 0;
     }
 
+    // --- 発言クールダウン ---
+
+    /** 行動ループからの自発的発言が許可されているか */
+    public boolean canSpeakBehavior() {
+        return ticksSinceLastSpeech >= SPEECH_COOLDOWN_TICKS;
+    }
+
+    /** 発言したことを記録 */
+    public void markSpoke() {
+        ticksSinceLastSpeech = 0;
+    }
+
+    /** このプレイヤーに最近挨拶済みか */
+    public boolean hasGreeted(String playerName) {
+        return greetedPlayers.contains(playerName);
+    }
+
+    /** 挨拶済みとしてマーク */
+    public void markGreeted(String playerName) {
+        greetedPlayers.add(playerName);
+    }
+
+    // --- 会話管理 ---
+
     public boolean isInConversation() {
         return conversationPartner != null;
     }
@@ -116,6 +159,7 @@ public class NPCBrain {
     public void startConversation(String playerName) {
         this.conversationPartner = playerName;
         this.state = NPCState.TALKING;
+        this.ticksSinceLastConversationActivity = 0;
     }
 
     public void endConversation() {
@@ -123,6 +167,38 @@ public class NPCBrain {
         if (state == NPCState.TALKING) {
             state = NPCState.IDLE;
         }
+        this.ticksSinceLastConversationActivity = 0;
+    }
+
+    /** 会話でやりとりがあったことを記録 */
+    public void markConversationActivity() {
+        this.ticksSinceLastConversationActivity = 0;
+    }
+
+    /** 会話がタイムアウトしたか */
+    public boolean isConversationTimedOut(int timeoutTicks) {
+        return isInConversation() && ticksSinceLastConversationActivity >= timeoutTicks;
+    }
+
+    // --- ホームリーシュ ---
+
+    /** NPCがホーム範囲から大きく離れているか */
+    public boolean isTooFarFromHome() {
+        if (npcEntity == null) return false;
+        Location home = getHomeLocation();
+        if (home == null) return false;
+        double maxDist = data.getRange() * HOME_LEASH_MULTIPLIER;
+        return npcEntity.getLocation().distanceSquared(home) > maxDist * maxDist;
+    }
+
+    /** ホームに帰還するアクションを生成 */
+    public WalkToAction createReturnHomeAction() {
+        Location home = getHomeLocation();
+        if (home == null) return null;
+        home.setY(MovementAgent.findGroundY(
+                npcEntity.getWorld(), home.getBlockX(), home.getBlockZ(),
+                npcEntity.getLocation().getBlockY() + 10));
+        return new WalkToAction(home, 1.0);
     }
 
     public Location getHomeLocation() {

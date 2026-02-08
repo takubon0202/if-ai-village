@@ -10,12 +10,17 @@ import com.ifmineai.ai.gemini.GeminiClient;
 import com.ifmineai.ai.gemini.GeminiPromptBuilder;
 import com.ifmineai.ai.gemini.GeminiResponseParser;
 import com.ifmineai.ai.action.NPCAction;
+import com.ifmineai.ai.action.SayAction;
 import com.ifmineai.ai.memory.MemoryStore;
 import com.ifmineai.ai.personality.PersonalityLoader;
 import com.ifmineai.ai.personality.PersonalityProfile;
 import com.ifmineai.config.AIConfig;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Mob;
+import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.*;
@@ -27,7 +32,7 @@ public class AIBrainManager {
     private final IFMineAIPlugin plugin;
     private final AIConfig aiConfig;
     private final Map<UUID, NPCBrain> brains = new ConcurrentHashMap<>();
-    private final List<UUID> brainOrder = new ArrayList<>(); // ラウンドロビン用
+    private final List<UUID> brainOrder = new ArrayList<>();
     private int roundRobinIndex = 0;
     private BukkitTask tickTask;
 
@@ -57,7 +62,6 @@ public class AIBrainManager {
             return;
         }
 
-        // コンポーネント初期化
         personalityLoader = new PersonalityLoader(plugin);
         memoryStore = new MemoryStore(plugin);
         geminiClient = new GeminiClient(aiConfig);
@@ -68,7 +72,6 @@ public class AIBrainManager {
         conversationAgent = new ConversationAgent(aiConfig, memoryStore);
         memoryAgent = new MemoryAgent(aiConfig, memoryStore);
 
-        // tickループ開始
         tickTask = plugin.getServer().getScheduler().runTaskTimer(
                 plugin, this::tickAll, 1L, 1L
         );
@@ -84,10 +87,6 @@ public class AIBrainManager {
         }
         for (NPCBrain brain : brains.values()) {
             brain.clearActions();
-            Mob npc = brain.getNpcEntity();
-            if (npc != null && npc.isValid()) {
-                npc.setAI(false);
-            }
         }
         brains.clear();
         brainOrder.clear();
@@ -123,7 +122,7 @@ public class AIBrainManager {
     }
 
     /**
-     * メインtickループ - 全ブレインを毎tick実行し、ラウンドロビンでAI判断をリクエスト
+     * メインtickループ
      */
     private void tickAll() {
         if (brains.isEmpty()) return;
@@ -131,6 +130,33 @@ public class AIBrainManager {
         // 全ブレインのアクション実行 (毎tick)
         for (NPCBrain brain : brains.values()) {
             brain.tick();
+
+            // ホームリーシュ: 範囲外に出たら帰還
+            if (!brain.isInConversation()
+                    && brain.getState() == NPCState.IDLE
+                    && brain.isTooFarFromHome()) {
+                var returnAction = brain.createReturnHomeAction();
+                if (returnAction != null) {
+                    brain.interruptWith(returnAction);
+                }
+            }
+
+            // 会話タイムアウト (60秒)
+            int timeoutTicks = aiConfig.getConversationTimeoutSeconds() * 20;
+            if (brain.isConversationTimedOut(timeoutTicks)) {
+                String partner = brain.getConversationPartner();
+                endConversation(brain.getNpcUUID());
+                // プレイヤーに通知
+                if (partner != null) {
+                    Player player = Bukkit.getPlayer(partner);
+                    if (player != null && player.isOnline()) {
+                        player.sendMessage(Component.text(
+                                "NPCとの会話がタイムアウトしました", NamedTextColor.GRAY));
+                        // activeConversations からも除去
+                        plugin.getActiveConversations().values().remove(brain.getNpcUUID());
+                    }
+                }
+            }
         }
 
         // ラウンドロビンで1体ずつAI判断をチェック
@@ -160,38 +186,50 @@ public class AIBrainManager {
         Mob npc = brain.getNpcEntity();
         if (npc == null) return;
 
-        // 環境スキャン (メインスレッド)
         DecisionContext context = awarenessAgent.scan(npc, brain);
         brain.setLastContext(context);
         brain.markAIRequestSent();
 
-        // 性格プロファイル取得
         PersonalityProfile profile = personalityLoader.getProfile(brain.getData().getPersonalityType());
 
-        // プロンプト構築
         String systemPrompt = promptBuilder.buildSystemPrompt(profile, brain);
         String userPrompt = promptBuilder.buildUserPrompt(context, brain);
 
-        // 非同期でGemini APIコール
         geminiClient.requestBehavior(systemPrompt, userPrompt).thenAccept(response -> {
-            // パース
             List<NPCAction> actions = responseParser.parse(response, npc, brain);
 
-            // メインスレッドでアクション適用
             plugin.getServer().getScheduler().runTask(plugin, () -> {
                 brain.markAIResponseReceived();
                 if (!actions.isEmpty()) {
                     for (NPCAction action : actions) {
+                        // 発言クールダウンフィルタ: 行動ループからのSayActionはクールダウン中なら除外
+                        if (action instanceof SayAction) {
+                            if (!brain.canSpeakBehavior()) {
+                                continue; // クールダウン中 → 発言をスキップ
+                            }
+                            brain.markSpoke();
+                        }
                         brain.enqueueAction(action);
                     }
+                    // フィルタ後にアクションが空になった場合のフォールバック
+                    if (brain.getActionQueueSize() == 0 && brain.getCurrentAction() == null) {
+                        NPCAction randomWalk = movementAgent.generateRandomWalk(npc, brain);
+                        if (randomWalk != null) {
+                            brain.enqueueAction(randomWalk);
+                        } else {
+                            brain.enqueueAction(
+                                    new com.ifmineai.ai.action.IdleAction(60 + new Random().nextInt(60))
+                            );
+                        }
+                    }
                 } else {
-                    // フォールバック: ランダム歩行 (待機だけでなく動く)
+                    // フォールバック: ランダム歩行
                     NPCAction randomWalk = movementAgent.generateRandomWalk(npc, brain);
                     if (randomWalk != null) {
                         brain.enqueueAction(randomWalk);
                     } else {
                         brain.enqueueAction(
-                                new com.ifmineai.ai.action.IdleAction(40 + new Random().nextInt(40))
+                                new com.ifmineai.ai.action.IdleAction(60 + new Random().nextInt(60))
                         );
                     }
                 }
@@ -200,7 +238,6 @@ public class AIBrainManager {
             plugin.getLogger().log(Level.WARNING, "AI判断リクエスト失敗: " + brain.getNpcUUID(), ex);
             plugin.getServer().getScheduler().runTask(plugin, () -> {
                 brain.markAIResponseReceived();
-                // エラー時はフォールバック: 移動エージェントによるランダム歩行
                 NPCAction fallback = movementAgent.generateRandomWalk(npc, brain);
                 if (fallback != null) {
                     brain.enqueueAction(fallback);
@@ -216,6 +253,9 @@ public class AIBrainManager {
     public void handlePlayerMessage(UUID npcUUID, String playerName, String message) {
         NPCBrain brain = brains.get(npcUUID);
         if (brain == null) return;
+
+        // 会話アクティビティを記録 (タイムアウト延長)
+        brain.markConversationActivity();
 
         conversationAgent.handleMessage(brain, playerName, message, geminiClient, promptBuilder)
                 .thenAccept(actions -> {
@@ -238,7 +278,6 @@ public class AIBrainManager {
         NPCBrain brain = brains.get(npcUUID);
         if (brain == null) return;
 
-        // 進行中アクションをクリアして会話に集中
         brain.clearActions();
         brain.startConversation(playerName);
         conversationAgent.startConversation(brain, playerName, geminiClient, promptBuilder)

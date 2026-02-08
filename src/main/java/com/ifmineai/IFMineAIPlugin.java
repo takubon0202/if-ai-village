@@ -178,4 +178,5 @@ public class IFMineAIPlugin extends JavaPlugin implements Listener {
     public CounselorManager getCounselorManager() { return counselorManager; }
     public AIConfig getAIConfig() { return aiConfig; }
     public AIBrainManager getAIBrainManager() { return aiBrainManager; }
+    public Map<UUID, UUID> getActiveConversations() { return activeConversations; }
 }

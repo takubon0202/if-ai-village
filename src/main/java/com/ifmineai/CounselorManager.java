@@ -102,8 +102,8 @@ public class CounselorManager implements Listener {
         counselors.put(uuid, data);
 
         if (aiEnabled) {
-            // AI有効: AIがfalseの状態で開始し、ブレインが制御する
-            villager.setAI(false);
+            // AI有効: Villager組み込みAIで自然に歩き回りつつ、ブレインが指示を出す
+            villager.setAI(true);
             aiBrainManager.registerNPC(villager, data);
         } else {
             // AI無効: 従来のテレポートパトロール
@@ -257,7 +257,7 @@ public class CounselorManager implements Listener {
                 if (entity.getUniqueId().equals(uuid) && entity instanceof Villager villager) {
                     villager.getPersistentDataContainer().set(counselorKey, PersistentDataType.BYTE, (byte) 1);
                     if (data.isAiEnabled() && aiBrainManager != null && aiBrainManager.isEnabled()) {
-                        villager.setAI(false);
+                        villager.setAI(true);
                         aiBrainManager.registerNPC(villager, data);
                     } else {
                         startPatrol(villager, data);
@@ -280,7 +280,7 @@ public class CounselorManager implements Listener {
 
                 if (data.isAiEnabled() && aiBrainManager != null && aiBrainManager.isEnabled()) {
                     if (!aiBrainManager.hasBrain(uuid)) {
-                        villager.setAI(false);
+                        villager.setAI(true);
                         aiBrainManager.registerNPC(villager, data);
                     }
                 } else if (!patrolTasks.containsKey(uuid)) {

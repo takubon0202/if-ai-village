@@ -14,7 +14,7 @@ public class IdleAction implements NPCAction {
     @Override
     public void start(Mob npc) {
         ticksElapsed = 0;
-        npc.setAI(false);
+        // AI は常時 true のまま。Villager が自然にうろうろする
     }
 
     @Override
