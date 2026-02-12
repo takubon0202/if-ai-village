@@ -23,7 +23,7 @@ public class CounselorTabCompleter implements TabCompleter {
     public List<String> onTabComplete(@NotNull CommandSender sender, @NotNull Command command,
                                        @NotNull String alias, @NotNull String[] args) {
         if (args.length == 1) {
-            return filterStartsWith(List.of("spawn", "remove", "list", "help", "menu", "wizard"), args[0]);
+            return filterStartsWith(List.of("spawn", "remove", "list", "tp", "help", "menu", "wizard"), args[0]);
         }
 
         if (args.length == 2) {

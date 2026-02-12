@@ -15,8 +15,11 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
+import org.bukkit.Location;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class CounselorCommandHandler implements CommandExecutor {
 
@@ -52,6 +55,7 @@ public class CounselorCommandHandler implements CommandExecutor {
             case "spawn" -> handleSpawn(player, args);
             case "remove" -> handleRemove(player, args);
             case "list" -> counselorManager.listCounselors(player);
+            case "tp" -> handleTeleport(player, args);
             default -> {
                 player.sendMessage(Component.text("不明なサブコマンドです。", NamedTextColor.RED)
                         .append(Component.text(" /counselor help", ACCENT)
@@ -153,7 +157,39 @@ public class CounselorCommandHandler implements CommandExecutor {
                 counselorManager.removeAll();
                 player.sendMessage(Component.text("全ての相談員NPCを削除しました", NamedTextColor.YELLOW));
             }
-            default -> player.sendMessage(Component.text("使い方: /counselor remove <nearest|all>", NamedTextColor.RED));
+            default -> {
+                // UUID指定削除を試行
+                try {
+                    UUID uuid = UUID.fromString(args[1]);
+                    if (counselorManager.removeCounselorByUUID(uuid)) {
+                        player.sendMessage(Component.text("NPCを削除しました", NamedTextColor.YELLOW));
+                    } else {
+                        player.sendMessage(Component.text("指定されたNPCが見つかりません", NamedTextColor.RED));
+                    }
+                } catch (IllegalArgumentException e) {
+                    player.sendMessage(Component.text("使い方: /counselor remove <nearest|all|UUID>", NamedTextColor.RED));
+                }
+            }
+        }
+    }
+
+    private void handleTeleport(Player player, String[] args) {
+        if (args.length < 2) {
+            player.sendMessage(Component.text("使い方: /counselor tp <UUID>", NamedTextColor.RED));
+            return;
+        }
+
+        try {
+            UUID uuid = UUID.fromString(args[1]);
+            Location loc = counselorManager.getCounselorLocation(uuid);
+            if (loc != null) {
+                player.teleport(loc);
+                player.sendMessage(Component.text("NPCの位置にテレポートしました", NamedTextColor.GREEN));
+            } else {
+                player.sendMessage(Component.text("指定されたNPCが見つかりません", NamedTextColor.RED));
+            }
+        } catch (IllegalArgumentException e) {
+            player.sendMessage(Component.text("無効なUUIDです", NamedTextColor.RED));
         }
     }
 

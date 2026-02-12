@@ -197,18 +197,95 @@ public class CounselorManager implements Listener {
             return;
         }
 
-        player.sendMessage(Component.text("=== 相談員NPC一覧 (" + counselors.size() + "体) ===", NamedTextColor.GOLD));
+        var LINE_COLOR = net.kyori.adventure.text.format.TextColor.color(0x555555);
+        var DESC_COLOR = net.kyori.adventure.text.format.TextColor.color(0xAAAAAA);
+        var ACCENT = net.kyori.adventure.text.format.TextColor.color(0x55FFFF);
+
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+        player.sendMessage(
+                Component.text("  NPC一覧 ", NamedTextColor.GOLD,
+                        net.kyori.adventure.text.format.TextDecoration.BOLD)
+                        .append(Component.text("(" + counselors.size() + "体)", DESC_COLOR)
+                                .decoration(net.kyori.adventure.text.format.TextDecoration.BOLD, false))
+        );
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+
         int i = 1;
         for (Map.Entry<UUID, CounselorData> entry : counselors.entrySet()) {
+            UUID uuid = entry.getKey();
             CounselorData data = entry.getValue();
-            player.sendMessage(Component.text(
-                    "" + i + ". " + data.getWorldName()
-                            + " [" + (int) data.getOriginX() + ", " + (int) data.getOriginY() + ", " + (int) data.getOriginZ() + "]"
-                            + " " + data.getDirection() + " range=" + data.getRange(),
-                    NamedTextColor.WHITE
-            ));
+            String shortUUID = uuid.toString().substring(0, 8);
+
+            // 性格の日本語名と色
+            String personalityJP = switch (data.getPersonalityType()) {
+                case "counselor" -> "相談員";
+                case "guard" -> "衛兵";
+                case "merchant" -> "商人";
+                case "explorer" -> "探検家";
+                default -> data.getPersonalityType();
+            };
+            var personalityColor = switch (data.getPersonalityType()) {
+                case "counselor" -> NamedTextColor.GREEN;
+                case "guard" -> NamedTextColor.RED;
+                case "merchant" -> NamedTextColor.YELLOW;
+                case "explorer" -> NamedTextColor.AQUA;
+                default -> NamedTextColor.WHITE;
+            };
+
+            // NPC情報行
+            player.sendMessage(
+                    Component.text("  " + i + ". ", NamedTextColor.WHITE)
+                            .append(Component.text(personalityJP, personalityColor))
+                            .append(Component.text(" [" + (int) data.getOriginX() + ", " + (int) data.getOriginY()
+                                    + ", " + (int) data.getOriginZ() + "]", DESC_COLOR))
+                            .append(Component.text(" " + data.getDirection() + " r=" + data.getRange(), DESC_COLOR))
+            );
+
+            // [TP] [削除] ボタン行
+            player.sendMessage(
+                    Component.text("     ")
+                            .append(Component.text("[", LINE_COLOR))
+                            .append(Component.text("TP", NamedTextColor.AQUA)
+                                    .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand(
+                                            "/counselor tp " + uuid.toString()))
+                                    .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
+                                            Component.text("このNPCにテレポート", NamedTextColor.AQUA))))
+                            .append(Component.text("]", LINE_COLOR))
+                            .append(Component.text(" "))
+                            .append(Component.text("[", LINE_COLOR))
+                            .append(Component.text("削除", NamedTextColor.RED)
+                                    .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand(
+                                            "/counselor remove " + uuid.toString()))
+                                    .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(
+                                            Component.text("このNPCを削除", NamedTextColor.RED))))
+                            .append(Component.text("]", LINE_COLOR))
+                            .append(Component.text(" " + shortUUID, LINE_COLOR))
+            );
+
             i++;
         }
+
+        player.sendMessage(Component.text("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━", LINE_COLOR));
+    }
+
+    /**
+     * UUID指定でNPCを削除 (リストUIから使用)
+     */
+    public boolean removeCounselorByUUID(UUID uuid) {
+        if (!counselors.containsKey(uuid)) return false;
+        removeCounselor(uuid);
+        return true;
+    }
+
+    /**
+     * UUID指定でNPCの位置を取得 (テレポート用)
+     */
+    public Location getCounselorLocation(UUID uuid) {
+        CounselorData data = counselors.get(uuid);
+        if (data == null) return null;
+        World world = Bukkit.getWorld(data.getWorldName());
+        if (world == null) return null;
+        return new Location(world, data.getOriginX(), data.getOriginY(), data.getOriginZ());
     }
 
     private void saveCounselors() {
