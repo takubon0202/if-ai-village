@@ -82,7 +82,7 @@ public class GeminiClient {
                     GenerateContentConfig configBuilder = GenerateContentConfig.builder()
                             .systemInstruction(Content.fromParts(Part.fromText(systemPrompt)))
                             .temperature(0.7f)
-                            .maxOutputTokens(256)
+                            .maxOutputTokens(512)
                             .build();
 
                     GenerateContentResponse response = client.models.generateContent(

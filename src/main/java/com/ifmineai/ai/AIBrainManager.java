@@ -257,6 +257,11 @@ public class AIBrainManager {
         NPCBrain brain = brains.get(npcUUID);
         if (brain == null) return;
 
+        // 1問1答ガード: AI応答生成中なら無視
+        if (conversationAgent.isResponding(npcUUID)) {
+            return;
+        }
+
         // 会話アクティビティを記録 (タイムアウト延長)
         brain.markConversationActivity();
 
