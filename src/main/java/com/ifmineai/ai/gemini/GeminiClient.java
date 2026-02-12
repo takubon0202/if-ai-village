@@ -72,7 +72,7 @@ public class GeminiClient {
     }
 
     /**
-     * 会話リクエスト (Pro モデル - 高品質)
+     * 会話リクエスト (Flash モデル - 高速)
      */
     public CompletableFuture<String> requestConversation(String systemPrompt, String userPrompt) {
         return CompletableFuture.supplyAsync(() -> {
@@ -86,7 +86,7 @@ public class GeminiClient {
                             .build();
 
                     GenerateContentResponse response = client.models.generateContent(
-                            config.getGeminiProModel(),
+                            config.getGeminiFlashModel(),
                             userPrompt,
                             configBuilder
                     );

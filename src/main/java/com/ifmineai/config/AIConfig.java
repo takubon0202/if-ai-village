@@ -88,8 +88,7 @@ public class AIConfig {
             logger.warning("  「AIza」で始まる正しいキーを設定してください");
         } else {
             logger.info("  AI: 有効");
-            logger.info("  行動モデル: " + geminiFlashModel);
-            logger.info("  会話モデル: " + geminiProModel);
+            logger.info("  モデル: " + geminiFlashModel);
             logger.info("  同時リクエスト上限: " + maxConcurrentRequests);
         }
 
