@@ -105,7 +105,7 @@ public class ConversationAgent implements BehaviorAgent {
                     addHistory(npcUUID, "assistant", cleaned);
                     memoryStore.addMemory(npcUUID, new MemoryEntry(
                             MemoryType.INTERACTION,
-                            playerName + ": " + message + " → " + truncate(cleaned, 80),
+                            playerName + ": " + message + " → " + truncate(cleaned, 250),
                             2
                     ));
                     List<NPCAction> actions = new ArrayList<>();
@@ -155,9 +155,9 @@ public class ConversationAgent implements BehaviorAgent {
                 cleaned = cleaned.substring(cleaned.indexOf(": ") + 2).trim();
             }
         }
-        // 200文字制限
-        if (cleaned.length() > 200) {
-            cleaned = cleaned.substring(0, 197) + "...";
+        // 600文字制限
+        if (cleaned.length() > 600) {
+            cleaned = cleaned.substring(0, 597) + "...";
         }
         return cleaned.isEmpty() ? "..." : cleaned;
     }

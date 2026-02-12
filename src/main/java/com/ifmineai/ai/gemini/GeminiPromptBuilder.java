@@ -115,7 +115,7 @@ public class GeminiPromptBuilder {
         sb.append("会話スタイル (厳守):\n");
         sb.append("- 受け身で会話してください。プレイヤーの話を聞いて、それに答えるスタイルです\n");
         sb.append("- 自分から質問攻めにしないでください。相手が何か言うまで待つ姿勢です\n");
-        sb.append("- 応答は自然な長さで。最大200文字程度まで使えます\n");
+        sb.append("- 応答は自然な長さで。最大600文字程度まで使えます\n");
         sb.append("- 定型的な丁寧語の羅列は避けてください (「何かお困りですか？」「ご相談に乗りますよ」等の繰り返しはNG)\n");
         sb.append("- プレイヤーの発言に直接答えてください。話をそらさないでください\n");
         sb.append("- 相手が「はい」「うん」等の短い返事をした場合、それに合った短い返答をしてください\n");
@@ -136,7 +136,7 @@ public class GeminiPromptBuilder {
 
         if (history.size() > 1) {
             sb.append("会話履歴:\n");
-            int start = Math.max(0, history.size() - 5);
+            int start = Math.max(0, history.size() - 15);
             for (int i = start; i < history.size(); i++) {
                 ConversationAgent.ChatMessage msg = history.get(i);
                 String role = msg.role().equals("user") ? playerName : "あなた";
@@ -146,7 +146,7 @@ public class GeminiPromptBuilder {
         }
 
         sb.append(playerName).append(": ").append(latestMessage).append("\n");
-        sb.append("1つだけ自然な応答を返してください（200文字以内）。複数回答は禁止です。");
+        sb.append("1つだけ自然な応答を返してください（600文字以内）。複数回答は禁止です。");
 
         return sb.toString();
     }

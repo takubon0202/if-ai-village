@@ -65,7 +65,7 @@ public class GeminiToolRegistry {
 
         FunctionDeclaration say = FunctionDeclaration.builder()
                 .name("say")
-                .description("周囲のプレイヤーにメッセージを話す (最大200文字)")
+                .description("周囲のプレイヤーにメッセージを話す (最大600文字)")
                 .parameters(Schema.builder()
                         .type("OBJECT")
                         .properties(Map.of(
